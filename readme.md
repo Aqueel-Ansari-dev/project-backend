@@ -20,9 +20,10 @@ Getting started locally:
 
 ```bash
 cd beyla-sandbox-api
+docker compose up -d db   # provision local Postgres via Docker
 npm install
 cp .env.example .env
-# update DB_URL, AWS credentials, and JWT secret
+# update AWS credentials, JWT secret, and overrides if needed
 npm run migrate
 npm run seed
 npm run dev

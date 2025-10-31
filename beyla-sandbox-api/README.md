@@ -13,14 +13,30 @@ TypeScript Express application serving the sandbox endpoints used by the Beyla a
 
 ## Local development
 
-```bash
-npm install
-cp .env.example .env
-# update DB_URL, AWS credentials, and JWT secret
-npm run migrate
-npm run seed
-npm run dev
-```
+1. Start the local PostgreSQL instance via Docker (this repository includes a ready-to-use Compose file):
+
+   ```bash
+   docker compose up -d db
+   ```
+
+   The container exposes port `5432` to the host so the Node process can reach it at `postgres://postgres:postgres@localhost:5432/beyla`.
+
+2. Install dependencies and bootstrap the service:
+
+   ```bash
+   npm install
+   cp .env.example .env
+   # update AWS credentials, JWT secret, and overrides if needed
+   npm run migrate
+   npm run seed
+   npm run dev
+   ```
+
+3. When finished developing, tear down the database container (preserving data in the named volume):
+
+   ```bash
+   docker compose down
+   ```
 
 Generate a short-lived JWT (HS256) with the configured `JWT_SECRET` to exercise protected endpoints.
 
