@@ -8,9 +8,8 @@
     "start": "node dist/index.js",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write \"src/**/*.{ts,js}\"",
-    "migrate": "node --loader ts-node/esm scripts/migrate.ts",
-    "seed": "node --loader ts-node/esm scripts/seed.ts"
-
+    "migrate": "ts-node --esm scripts/migrate.ts",
+    "seed": "ts-node --esm scripts/seed.ts"
   },
   "dependencies": {
     "aws-sdk": "^2.1616.0",
