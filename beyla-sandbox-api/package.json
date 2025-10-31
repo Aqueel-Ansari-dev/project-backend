@@ -10,6 +10,7 @@
     "format": "prettier --write \"src/**/*.{ts,js}\"",
     "migrate": "node --loader ts-node/esm scripts/migrate.ts",
     "seed": "node --loader ts-node/esm scripts/seed.ts"
+
   },
   "dependencies": {
     "aws-sdk": "^2.1616.0",
