@@ -1,0 +1,14 @@
+# Node
+beyla-sandbox-api/node_modules/
+beyla-sandbox-api/dist/
+beyla-sandbox-api/.env
+beyla-sandbox-api/package-lock.json
+
+# Terraform
+infra-aws/.terraform/
+infra-aws/.terraform.lock.hcl
+infra-aws/terraform.tfstate
+infra-aws/terraform.tfstate.backup
+
+# Editor
+.DS_Store
