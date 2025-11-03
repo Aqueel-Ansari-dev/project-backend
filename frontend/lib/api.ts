@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from './auth-context';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8080';
+const ADMIN_API_KEY = process.env.NEXT_PUBLIC_ADMIN_API_KEY;
 
 export interface Balance {
   id: string;
@@ -59,6 +60,9 @@ async function apiFetch<T>(path: string, init: RequestInit = {}, token?: string)
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }
+  if (ADMIN_API_KEY) {
+    headers.set('x-admin-key', ADMIN_API_KEY);
+  }
 
   const response = await fetch(url, { ...init, headers });
   if (!response.ok) {
@@ -79,7 +83,7 @@ export function useBalances() {
   const [error, setError] = useState<string | undefined>();
 
   const refresh = useCallback(async () => {
-    if (!tokens?.accessToken) return;
+    if (!tokens?.accessToken && !ADMIN_API_KEY) return;
     setLoading(true);
     setError(undefined);
     try {
@@ -106,7 +110,7 @@ export function useTransactions() {
   const [error, setError] = useState<string | undefined>();
 
   const refresh = useCallback(async () => {
-    if (!tokens?.accessToken) return;
+    if (!tokens?.accessToken && !ADMIN_API_KEY) return;
     setLoading(true);
     setError(undefined);
     try {
@@ -132,14 +136,14 @@ export function useTransactions() {
       category?: string;
       direction: 'in' | 'out';
     }) => {
-      if (!tokens?.accessToken) throw new Error('Not authenticated');
+      if (!tokens?.accessToken && !ADMIN_API_KEY) throw new Error('Not authenticated');
       const created = await apiFetch<Transaction>(
         '/transactions',
         {
           method: 'POST',
           body: JSON.stringify(payload),
         },
-        tokens.accessToken
+        tokens?.accessToken
       );
       await refresh();
       return created;
@@ -157,7 +161,7 @@ export function useAlerts() {
   const [error, setError] = useState<string | undefined>();
 
   const refresh = useCallback(async () => {
-    if (!tokens?.accessToken) return;
+    if (!tokens?.accessToken && !ADMIN_API_KEY) return;
     setLoading(true);
     setError(undefined);
     try {
@@ -176,12 +180,12 @@ export function useAlerts() {
 
   const fetchEvidence = useCallback(
     async (alertId: string) => {
-      if (!tokens?.accessToken) throw new Error('Not authenticated');
+      if (!tokens?.accessToken && !ADMIN_API_KEY) throw new Error('Not authenticated');
       try {
         const { url } = await apiFetch<{ url: string }>(
           `/alerts/${alertId}/evidence`,
           {},
-          tokens.accessToken
+          tokens?.accessToken
         );
         return url;
       } catch (err) {
@@ -209,30 +213,30 @@ export function useNayaOneDataset() {
 
   const hasMore = useMemo(() => nextOffset !== null, [nextOffset]);
 
-  const loadPage = useCallback(
-    async (requestedOffset: number, append: boolean) => {
-      if (!tokens?.accessToken) return;
-      setLoading(true);
-      setError(undefined);
+    const loadPage = useCallback(
+      async (requestedOffset: number, append: boolean) => {
+        if (!tokens?.accessToken && !ADMIN_API_KEY) return;
+        setLoading(true);
+        setError(undefined);
 
-      try {
-        const page = await apiFetch<NayaOneDatasetPage>(
-          `/datasets/nayaone?offset=${requestedOffset}&limit=${limit}`,
-          {},
-          tokens.accessToken
-        );
+        try {
+          const page = await apiFetch<NayaOneDatasetPage>(
+            `/datasets/nayaone?offset=${requestedOffset}&limit=${limit}`,
+            {},
+            tokens?.accessToken
+          );
 
-        setOffset(requestedOffset);
-        setNextOffset(page.nextOffset);
-        setRecords((prev) => (append ? [...prev, ...page.records] : page.records));
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load dataset');
-      } finally {
-        setLoading(false);
-      }
-    },
-    [limit, tokens?.accessToken]
-  );
+          setOffset(requestedOffset);
+          setNextOffset(page.nextOffset);
+          setRecords((prev) => (append ? [...prev, ...page.records] : page.records));
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'Failed to load dataset');
+        } finally {
+          setLoading(false);
+        }
+      },
+      [limit, tokens?.accessToken]
+    );
 
   useEffect(() => {
     loadPage(0, false).catch(() => undefined);

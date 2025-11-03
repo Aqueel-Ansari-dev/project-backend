@@ -10,7 +10,7 @@ TypeScript/Express service that exposes the sandbox API backed by PostgreSQL and
 
 Key features:
 
-- REST endpoints `/health`, `/balances`, `/transactions`, `/alerts` with JWT authentication for protected routes.
+- REST endpoints `/health`, `/balances`, `/transactions`, `/alerts` guarded by JWT authentication or a simple developer admin API key.
 - `/datasets/nayaone` proxy that securely fetches the synthetic UK SME dataset from NayaOne using the configured sandpit key.
 - PostgreSQL schema and SQL migrations plus simple seeding script for synthetic account data.
 - Evidence log writer that publishes structured audit JSON to S3 using the agreed key format and records metadata to PostgreSQL.
@@ -24,7 +24,7 @@ cd beyla-sandbox-api
 docker compose up -d db   # provision local Postgres via Docker
 npm install
 cp .env.example .env
-# update AWS credentials, JWT secret, and overrides if needed
+# update AWS credentials, JWT secret, admin API key, and overrides if needed
 npm run migrate
 npm run seed
 npm run dev
@@ -34,11 +34,11 @@ Example requests:
 
 ```bash
 curl localhost:8080/health/live
-curl -H "Authorization: Bearer <token>" localhost:8080/balances
-curl -H "Authorization: Bearer <token>" -X POST localhost:8080/transactions \
+curl -H "x-admin-key: <admin-key>" localhost:8080/balances
+curl -H "x-admin-key: <admin-key>" -X POST localhost:8080/transactions \
   -H "Content-Type: application/json" \
   -d '{"account_id":"<uuid>","amount":250,"currency":"GBP","direction":"out"}'
-curl -H "Authorization: Bearer <token>" "localhost:8080/datasets/nayaone?offset=0&limit=10"
+curl -H "x-admin-key: <admin-key>" "localhost:8080/datasets/nayaone?offset=0&limit=10"
 ```
 
 ### `infra-aws`
@@ -93,7 +93,7 @@ npm install
 npm run dev
 ```
 
-Set `NEXT_PUBLIC_API_BASE_URL` to your API endpoint and the Cognito variables to your user pool configuration. The app will redirect to the Hosted UI for sign-in and display the sandbox data after authentication. For quick local checks you can instead set `NEXT_PUBLIC_ENABLE_MOCK_AUTH=true` in `.env.local` to issue a mock session without Cognito.
+Set `NEXT_PUBLIC_API_BASE_URL` to your API endpoint and the Cognito variables to your user pool configuration. For developer-only flows, set `NEXT_PUBLIC_ADMIN_API_KEY` to match the API's `ADMIN_API_KEY` so the dashboard auto-authenticates without Cognito. Alternatively, enable `NEXT_PUBLIC_ENABLE_MOCK_AUTH=true` in `.env.local` to issue a mock session without Cognito.
 
 ## Deployment workflow
 

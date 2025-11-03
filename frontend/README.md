@@ -11,6 +11,8 @@ A responsive Next.js 14 + Tailwind dashboard for the Beyla sandbox API. The app 
 ## Getting started
 
 1. Copy `.env.example` to `.env.local` and set the environment variables for your API base URL and Cognito user pool details.
+   - For developer-only testing you can set `NEXT_PUBLIC_ADMIN_API_KEY` to match the API's `ADMIN_API_KEY`. The UI will
+     automatically attach the key to requests and skip the Cognito login screen.
    - For quick local smoke tests you can flip `NEXT_PUBLIC_ENABLE_MOCK_AUTH` to `true` to bypass Cognito and sign in with a mock sandbox user.
 2. Install dependencies and start the development server:
 
@@ -32,6 +34,7 @@ npm run dev
 | `NEXT_PUBLIC_COGNITO_LOGOUT_URI` | URL Cognito redirects back to after logout. |
 | `NEXT_PUBLIC_COGNITO_REGION` | AWS region of the Cognito user pool. |
 | `NEXT_PUBLIC_COGNITO_USER_POOL_ID` | Cognito user pool identifier (used for token audience validation). |
+| `NEXT_PUBLIC_ADMIN_API_KEY` | Shared admin key for local-only development. When set, the UI auto-authenticates and adds the key to API calls. |
 | `NEXT_PUBLIC_ENABLE_MOCK_AUTH` | When `true`, bypasses Cognito and issues a mock session for local development. |
 | `NEXT_PUBLIC_MOCK_USER_EMAIL` | Email shown for the mock session (if mock auth enabled). |
 | `NEXT_PUBLIC_MOCK_USER_NAME` | Display name for the mock session (if mock auth enabled). |

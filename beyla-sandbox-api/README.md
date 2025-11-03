@@ -5,7 +5,7 @@ TypeScript Express application serving the sandbox endpoints used by the Beyla a
 ## Features
 
 - Health, balances, transactions, and alerts endpoints.
-- JWT-based auth middleware (HS256) for all non-health routes.
+- Auth middleware that accepts either JWTs (HS256) or a developer admin API key for non-health routes.
 - Request correlation IDs, pino structured logging, and configurable rate limiting.
 - Evidence writer storing JSON payloads in S3 and mirroring metadata to PostgreSQL + SNS.
 - SQL migrations and seed script for synthetic sandbox data.
@@ -27,7 +27,7 @@ TypeScript Express application serving the sandbox endpoints used by the Beyla a
    ```bash
    npm install
    cp .env.example .env
-   # update AWS credentials, JWT secret, and overrides if needed
+   # update AWS credentials, JWT secret, admin API key, and overrides if needed
    npm run migrate
    npm run seed
    npm run dev
@@ -39,7 +39,9 @@ TypeScript Express application serving the sandbox endpoints used by the Beyla a
    docker compose down
    ```
 
-Generate a short-lived JWT (HS256) with the configured `JWT_SECRET` to exercise protected endpoints.
+For quick developer testing you can set `ADMIN_API_KEY` in `.env` and supply the same value via either the `x-admin-key`
+header or an `Authorization: Bearer <key>` header. If you prefer JWT flows, generate a short-lived HS256 token signed with the
+configured `JWT_SECRET`.
 
 ### Accessing the NayaOne synthetic dataset
 
@@ -52,7 +54,7 @@ following environment variables when running locally or in the cloud:
 Example request:
 
 ```bash
-curl -H "Authorization: Bearer <jwt>" \
+curl -H "x-admin-key: <admin-key>" \
      "http://localhost:8080/datasets/nayaone?offset=0&limit=10"
 ```
 

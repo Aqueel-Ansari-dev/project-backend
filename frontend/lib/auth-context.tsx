@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 const AUTH_STORAGE_KEY = 'beyla.sandbox.session';
 const allowMockAuth = process.env.NEXT_PUBLIC_ENABLE_MOCK_AUTH === 'true';
+const adminApiKey = process.env.NEXT_PUBLIC_ADMIN_API_KEY;
 const mockUserEmail = process.env.NEXT_PUBLIC_MOCK_USER_EMAIL ?? 'demo@beyla.local';
 const mockUserName = process.env.NEXT_PUBLIC_MOCK_USER_NAME ?? 'Sandbox User';
 
@@ -111,6 +112,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    if (adminApiKey) {
+      const adminTokens: AuthTokens = {
+        accessToken: adminApiKey,
+        idToken: 'admin-api-key',
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+      };
+      const adminUser: AuthUser = {
+        email: mockUserEmail,
+        given_name: mockUserName.split(' ')[0] ?? 'Sandbox',
+        family_name: mockUserName.split(' ').slice(1).join(' ') || 'User',
+        sub: 'admin-api-key',
+      };
+      setState({ loading: false, tokens: adminTokens, user: adminUser });
+      try {
+        window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(adminTokens));
+      } catch (err) {
+        console.warn('Unable to persist admin session', err);
+      }
+      return;
+    }
+
     if (allowMockAuth) {
       const mockTokens: AuthTokens = {
         accessToken: 'mock-access-token',
@@ -190,6 +212,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = useCallback(() => {
+    if (adminApiKey) {
+      const adminTokens: AuthTokens = {
+        accessToken: adminApiKey,
+        idToken: 'admin-api-key',
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+      };
+      const adminUser: AuthUser = {
+        email: mockUserEmail,
+        given_name: mockUserName.split(' ')[0] ?? 'Sandbox',
+        family_name: mockUserName.split(' ').slice(1).join(' ') || 'User',
+        sub: 'admin-api-key',
+      };
+      setTokens(adminTokens, adminUser);
+      return;
+    }
+
     if (allowMockAuth) {
       const mockTokens: AuthTokens = {
         accessToken: 'mock-access-token',
@@ -217,7 +255,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(() => {
-    if (allowMockAuth) {
+    if (allowMockAuth || adminApiKey) {
       setTokens(undefined, undefined);
       return;
     }

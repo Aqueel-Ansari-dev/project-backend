@@ -16,8 +16,36 @@ declare module 'express-serve-static-core' {
 
 const publicPaths = new Set(['/health/live', '/health/ready']);
 
+function authorizeWithAdminKey(req: Request): AuthenticatedUser | undefined {
+  const adminKey = process.env.ADMIN_API_KEY;
+  if (!adminKey) {
+    return undefined;
+  }
+
+  const headerKey = req.header('x-admin-key');
+  if (headerKey && headerKey === adminKey) {
+    return { id: 'admin-api-key', type: 'api-key' };
+  }
+
+  const authHeader = req.headers.authorization;
+  if (authHeader) {
+    const [scheme, token] = authHeader.split(' ');
+    if (scheme === 'Bearer' && token === adminKey) {
+      return { id: 'admin-api-key', type: 'api-key' };
+    }
+  }
+
+  return undefined;
+}
+
 export function authMiddleware(req: Request, res: Response, next: NextFunction) {
   if (publicPaths.has(req.path)) {
+    return next();
+  }
+
+  const adminUser = authorizeWithAdminKey(req);
+  if (adminUser) {
+    req.user = adminUser;
     return next();
   }
 
@@ -34,7 +62,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
   try {
     const secret = process.env.JWT_SECRET;
     if (!secret) {
-      throw new Error('JWT secret not configured');
+      throw new Error('JWT secret not configured. Set JWT_SECRET or use ADMIN_API_KEY.');
     }
 
     const decoded = jwt.verify(token, secret) as jwt.JwtPayload;
