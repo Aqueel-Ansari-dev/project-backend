@@ -1,6 +1,7 @@
-# Beyla Sandbox Backend
 
-This repository contains two projects that deliver the Beyla sandbox backend from API to AWS infrastructure.
+# Beyla Sandbox Platform
+
+This repository contains the Beyla sandbox backend API, AWS infrastructure as code, and a mobile-friendly Next.js frontend for demoing the experience end-to-end.
 
 ## Projects
 
@@ -68,17 +69,42 @@ terraform apply \
 
 Outputs include VPC/subnet IDs, database endpoint, evidence bucket name, and ALB DNS record for the deployed service.
 
+### `frontend`
+
+Next.js 14 dashboard that authenticates with Cognito and consumes the sandbox API.
+
+Highlights:
+
+- Cognito Hosted UI authentication with id/access token persistence in `localStorage`.
+- Dashboard home summarizing balances and recent transactions with responsive cards.
+- Transactions workspace with modal form to create synthetic ledger entries via `POST /transactions`.
+- Alerts view featuring status badges and audit evidence deep links.
+- Settings page for future profile preferences.
+- Tailwind CSS and shadcn-inspired UI primitives tuned for mobile and desktop.
+
+Getting started:
+
+```bash
+cd frontend
+cp .env.example .env.local
+npm install
+npm run dev
+```
+
+Set `NEXT_PUBLIC_API_BASE_URL` to your API endpoint and the Cognito variables to your user pool configuration. The app will redirect to the Hosted UI for sign-in and display the sandbox data after authentication.
+
 ## Deployment workflow
 
 1. Build and push the API container to the provisioned ECR repository.
 2. Apply Terraform with the new image tag and Secrets Manager ARNs.
-3. Verify the ECS service is healthy via the ALB `/health/ready` endpoint and confirm evidence files in S3.
-4. Share weekly status updates referencing API coverage, infrastructure state, and any risks/blockers.
+3. Deploy the frontend (Vercel, CloudFront, or ECS Fargate) with the environment variables pointing at the API and Cognito user pool.
+4. Verify the ECS service is healthy via the ALB `/health/ready` endpoint, confirm evidence files in S3, and run through the frontend demo (login → dashboard → create transaction → view alert → open audit log).
 
 ## Repository structure
 
 ```
 .
 ├── beyla-sandbox-api/  # Express API source, scripts, Dockerfile
+├── frontend/           # Next.js dashboard for Cognito-authenticated operators
 └── infra-aws/          # Terraform infrastructure as code
 ```
