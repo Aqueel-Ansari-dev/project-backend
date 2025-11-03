@@ -13,6 +13,7 @@ import { requestContextMiddleware } from './middlewares/request-context.js';
 import alertsRouter from './routes/alerts.js';
 import balancesRouter from './routes/balances.js';
 import healthRouter from './routes/health.js';
+import datasetsRouter from './routes/datasets.js';
 import transactionsRouter from './routes/transactions.js';
 
 const app = express();
@@ -52,6 +53,7 @@ app.use('/health', healthRouter);
 app.use('/balances', authMiddleware, requestContextMiddleware, balancesRouter);
 app.use('/transactions', authMiddleware, requestContextMiddleware, transactionsRouter);
 app.use('/alerts', authMiddleware, requestContextMiddleware, alertsRouter);
+app.use('/datasets', authMiddleware, requestContextMiddleware, datasetsRouter);
 
 app.use(errorHandler);
 

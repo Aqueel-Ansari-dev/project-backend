@@ -3,13 +3,14 @@
 import { ButtonHTMLAttributes, forwardRef } from 'react';
 import { cn } from './cn';
 
-type ButtonVariant = 'default' | 'ghost' | 'outline';
+type ButtonVariant = 'default' | 'ghost' | 'outline' | 'secondary';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 const variantClasses: Record<ButtonVariant, string> = {
   default: 'bg-brand text-brand-foreground hover:bg-brand/90',
   ghost: 'bg-transparent text-slate-200 hover:bg-slate-800/80',
   outline: 'border border-slate-700 bg-transparent hover:bg-slate-800/60',
+  secondary: 'bg-slate-800 text-slate-100 hover:bg-slate-700/80 border border-slate-700/80',
 };
 
 const sizeClasses: Record<ButtonSize, string> = {

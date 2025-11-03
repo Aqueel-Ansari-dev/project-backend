@@ -1,6 +1,5 @@
 # Beyla Sandbox Platform
 
-
 This repository contains the Beyla sandbox backend API, AWS infrastructure as code, and a mobile-friendly Next.js frontend for demoing the experience end-to-end.
 
 ## Projects
@@ -12,6 +11,7 @@ TypeScript/Express service that exposes the sandbox API backed by PostgreSQL and
 Key features:
 
 - REST endpoints `/health`, `/balances`, `/transactions`, `/alerts` with JWT authentication for protected routes.
+- `/datasets/nayaone` proxy that securely fetches the synthetic UK SME dataset from NayaOne using the configured sandpit key.
 - PostgreSQL schema and SQL migrations plus simple seeding script for synthetic account data.
 - Evidence log writer that publishes structured audit JSON to S3 using the agreed key format and records metadata to PostgreSQL.
 - Optional SNS fan-out for agent observability by publishing each evidence payload to the `agent-events` topic.
@@ -38,6 +38,7 @@ curl -H "Authorization: Bearer <token>" localhost:8080/balances
 curl -H "Authorization: Bearer <token>" -X POST localhost:8080/transactions \
   -H "Content-Type: application/json" \
   -d '{"account_id":"<uuid>","amount":250,"currency":"GBP","direction":"out"}'
+curl -H "Authorization: Bearer <token>" "localhost:8080/datasets/nayaone?offset=0&limit=10"
 ```
 
 ### `infra-aws`
@@ -79,6 +80,7 @@ Highlights:
 - Dashboard home summarizing balances and recent transactions with responsive cards.
 - Transactions workspace with modal form to create synthetic ledger entries via `POST /transactions`.
 - Alerts view featuring status badges and audit evidence deep links.
+- Dataset explorer that pages through the NayaOne sandpit results via the backend proxy endpoint.
 - Settings page for future profile preferences.
 - Tailwind CSS and shadcn-inspired UI primitives tuned for mobile and desktop.
 
@@ -98,7 +100,7 @@ Set `NEXT_PUBLIC_API_BASE_URL` to your API endpoint and the Cognito variables to
 1. Build and push the API container to the provisioned ECR repository.
 2. Apply Terraform with the new image tag and Secrets Manager ARNs.
 3. Deploy the frontend (Vercel, CloudFront, or ECS Fargate) with the environment variables pointing at the API and Cognito user pool.
-4. Verify the ECS service is healthy via the ALB `/health/ready` endpoint, confirm evidence files in S3, and run through the frontend demo (login → dashboard → create transaction → view alert → open audit log).
+4. Verify the ECS service is healthy via the ALB `/health/ready` endpoint, confirm evidence files in S3, and run through the frontend demo (login → dashboard → create transaction → view alert → open audit log → browse NayaOne dataset).
 
 ## Repository structure
 

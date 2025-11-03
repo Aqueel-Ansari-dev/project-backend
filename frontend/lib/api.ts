@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from './auth-context';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8080';
@@ -34,6 +34,15 @@ export interface Alert {
   status: string;
   created_at: string;
   payload: Record<string, unknown>;
+}
+
+export type NayaOneRecord = Record<string, unknown>;
+
+interface NayaOneDatasetPage {
+  records: NayaOneRecord[];
+  offset: number;
+  limit: number;
+  nextOffset: number | null;
 }
 
 interface ApiResponse<T> {
@@ -187,4 +196,54 @@ export function useAlerts() {
   );
 
   return { data, loading, error, refresh, fetchEvidence };
+}
+
+export function useNayaOneDataset() {
+  const { tokens } = useAuth();
+  const [records, setRecords] = useState<NayaOneRecord[]>([]);
+  const [offset, setOffset] = useState(0);
+  const [limit] = useState(10);
+  const [nextOffset, setNextOffset] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | undefined>();
+
+  const hasMore = useMemo(() => nextOffset !== null, [nextOffset]);
+
+  const loadPage = useCallback(
+    async (requestedOffset: number, append: boolean) => {
+      if (!tokens?.accessToken) return;
+      setLoading(true);
+      setError(undefined);
+
+      try {
+        const page = await apiFetch<NayaOneDatasetPage>(
+          `/datasets/nayaone?offset=${requestedOffset}&limit=${limit}`,
+          {},
+          tokens.accessToken
+        );
+
+        setOffset(requestedOffset);
+        setNextOffset(page.nextOffset);
+        setRecords((prev) => (append ? [...prev, ...page.records] : page.records));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load dataset');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [limit, tokens?.accessToken]
+  );
+
+  useEffect(() => {
+    loadPage(0, false).catch(() => undefined);
+  }, [loadPage]);
+
+  const loadMore = useCallback(async () => {
+    if (nextOffset === null) return;
+    return loadPage(nextOffset, true);
+  }, [loadPage, nextOffset]);
+
+  const refresh = useCallback(async () => loadPage(0, false), [loadPage]);
+
+  return { records, offset, limit, loading, error, loadMore, hasMore, refresh };
 }

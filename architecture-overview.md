@@ -15,6 +15,7 @@ graph LR
   Postgres[(RDS PostgreSQL)]
   S3[S3 Evidence Bucket]
   SNS[SNS Topic + SQS Queue]
+  NayaOne[NayaOne Synthetic Dataset API]
 
   User -->|https| Browser
   Browser -->|OIDC redirect| Cognito
@@ -23,11 +24,13 @@ graph LR
   API -->|SQL queries| Postgres
   API -->|Evidence JSON| S3
   API -->|Event fan-out| SNS
+  API -->|Outbound fetch| NayaOne
 ```
 
 * Operators authenticate with Cognito (or the local mock mode) and interact with the responsive dashboard running in Next.js.【F:frontend/lib/auth-context.tsx†L1-L256】
 * Authenticated requests are sent to the Express API, which enforces JWT verification and mounts the health, balance, transaction, and alert routes behind shared middleware for correlation, rate limiting, and error handling.【F:beyla-sandbox-api/src/index.ts†L1-L61】【F:beyla-sandbox-api/src/middlewares/auth.ts†L1-L50】
 * The API persists business data to PostgreSQL and writes audit evidence to S3 and SNS so downstream systems can replay or monitor events.【F:beyla-sandbox-api/src/db/migrations/0001_init.sql†L1-L48】【F:beyla-sandbox-api/src/services/evidence.ts†L1-L57】
+* For synthetic reference data, the API proxies secure requests to the external NayaOne dataset using the configured sandpit key.【F:beyla-sandbox-api/src/routes/datasets.ts†L1-L34】【F:beyla-sandbox-api/src/services/nayaone.ts†L1-L58】
 * Infrastructure components—VPC, ECS, RDS, S3, SNS/SQS, IAM, and supporting security groups—are provisioned with Terraform under `infra-aws/` for parity across environments.【F:infra-aws/main.tf†L1-L76】
 
 ## Component responsibilities
@@ -35,7 +38,7 @@ graph LR
 ### Frontend (`frontend/`)
 
 * **Authentication context** stores Cognito tokens (or mock credentials) in `localStorage`, exposes sign-in/out helpers, and decodes JWT payloads for user metadata.【F:frontend/lib/auth-context.tsx†L1-L256】
-* **Data hooks** encapsulate API fetches for balances, transactions, alerts, and evidence links, automatically attaching bearer tokens and normalizing errors for UI components.【F:frontend/lib/api.ts†L1-L190】
+* **Data hooks** encapsulate API fetches for balances, transactions, alerts, evidence links, and the external NayaOne dataset, automatically attaching bearer tokens and normalizing errors for UI components.【F:frontend/lib/api.ts†L1-L240】
 * **UI composition** uses a responsive shell with Tailwind and shadcn-inspired primitives to present dashboard KPIs, transaction modals, alert badges, and settings forms.
 
 ### API (`beyla-sandbox-api/`)
@@ -44,6 +47,7 @@ graph LR
 * **Auth middleware** validates bearer tokens with the configured JWT secret and projects identity metadata onto the Express `req.user` object.【F:beyla-sandbox-api/src/middlewares/auth.ts†L1-L50】
 * **Request context middleware** exposes the correlation ID, actor, and client IP to downstream handlers so audit records stay consistent.【F:beyla-sandbox-api/src/middlewares/request-context.ts†L1-L26】
 * **Data access layer** wraps SQL queries for listing balances and transactions, creating ledger entries, and recording alert payloads, providing the shapes consumed by both API and frontend.【F:beyla-sandbox-api/src/db/account-repository.ts†L1-L118】
+* **External dataset proxy** validates pagination parameters and forwards authenticated calls to NayaOne, shielding client code from sandpit headers while preserving audit context.【F:beyla-sandbox-api/src/routes/datasets.ts†L1-L34】【F:beyla-sandbox-api/src/services/nayaone.ts†L1-L58】
 * **Evidence pipeline** writes structured JSON documents to S3 under the agreed key prefix and optionally publishes the same payload to SNS for observability. Each write also logs metadata into the `evidence_events` table for traceability.【F:beyla-sandbox-api/src/services/evidence.ts†L1-L57】【F:beyla-sandbox-api/src/services/audit-log.ts†L1-L19】
 
 ### Data model
@@ -90,6 +94,10 @@ sequenceDiagram
 ## Alert and audit flow
 
 Alerts follow the same evidence pipeline and expose a presigned evidence URL through `/alerts/:id/evidence`, which the frontend resolves when an operator taps "View evidence". Evidence payloads mirror the S3 content path `env=<env>/date=<YYYY-MM-DD>/corr=<UUID>/event-<ISO>.json`, helping downstream analysis tools segment by environment and request correlation.【F:beyla-sandbox-api/src/routes/alerts.ts†L1-L72】【F:beyla-sandbox-api/src/services/evidence.ts†L21-L57】
+
+## External dataset access
+
+Operators can enrich sandbox sessions with sample UK SME data sourced from the NayaOne sandpit. The frontend invokes `GET /datasets/nayaone`, which the API validates and then fans out to the hosted dataset with the stored sandpit key. Offsets must be multiples of 10 as per the provider contract, and the response returns the upstream payload alongside the computed `nextOffset` for easy pagination.【F:frontend/app/datasets/page.tsx†L1-L121】【F:beyla-sandbox-api/src/routes/datasets.ts†L1-L34】
 
 ## Deployment topology
 

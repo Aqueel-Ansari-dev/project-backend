@@ -10,6 +10,7 @@ TypeScript Express application serving the sandbox endpoints used by the Beyla a
 - Evidence writer storing JSON payloads in S3 and mirroring metadata to PostgreSQL + SNS.
 - SQL migrations and seed script for synthetic sandbox data.
 - Dockerfile for multi-stage production builds.
+- Optional proxy endpoint for the NayaOne synthetic UK business dataset with offset-based pagination.
 
 ## Local development
 
@@ -39,6 +40,24 @@ TypeScript Express application serving the sandbox endpoints used by the Beyla a
    ```
 
 Generate a short-lived JWT (HS256) with the configured `JWT_SECRET` to exercise protected endpoints.
+
+### Accessing the NayaOne synthetic dataset
+
+The API exposes a lightweight proxy to the NayaOne Corporate Account Hub dataset at `GET /datasets/nayaone`. Configure the
+following environment variables when running locally or in the cloud:
+
+- `NAYAONE_API_KEY` – your NayaOne sandpit API key (required).
+- `NAYAONE_API_URL` – override for the dataset endpoint (defaults to `https://data.nayaone.com/cah_synth_data`).
+
+Example request:
+
+```bash
+curl -H "Authorization: Bearer <jwt>" \
+     "http://localhost:8080/datasets/nayaone?offset=0&limit=10"
+```
+
+The endpoint enforces offsets as non-negative multiples of 10 per the sandpit API contract. Responses include `records`
+containing the upstream payload and a `nextOffset` value when more data is available.
 
 ## Scripts
 
