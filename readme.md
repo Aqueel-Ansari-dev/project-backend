@@ -35,10 +35,10 @@ Example requests:
 ```bash
 curl localhost:8080/health/live
 curl -H "x-admin-key: <admin-key>" localhost:8080/balances
-curl -H "Authorization: ApiKey <admin-key>" -X POST localhost:8080/transactions \
+curl -H "x-admin-key: <admin-key>" -X POST localhost:8080/transactions \
   -H "Content-Type: application/json" \
   -d '{"account_id":"<uuid>","amount":250,"currency":"GBP","direction":"out"}'
-curl -H "Authorization: ApiKey <admin-key>" "localhost:8080/datasets/nayaone?offset=0&limit=10"
+curl -H "x-admin-key: <admin-key>" "localhost:8080/datasets/nayaone?offset=0&limit=10"
 ```
 
 ### `infra-aws`
