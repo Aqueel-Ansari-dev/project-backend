@@ -1,5 +1,5 @@
-
 # Beyla Sandbox Platform
+
 
 This repository contains the Beyla sandbox backend API, AWS infrastructure as code, and a mobile-friendly Next.js frontend for demoing the experience end-to-end.
 
@@ -75,7 +75,7 @@ Next.js 14 dashboard that authenticates with Cognito and consumes the sandbox AP
 
 Highlights:
 
-- Cognito Hosted UI authentication with id/access token persistence in `localStorage`.
+- Cognito Hosted UI authentication with id/access token persistence in `localStorage` (optional mock auth toggle for local smoke tests).
 - Dashboard home summarizing balances and recent transactions with responsive cards.
 - Transactions workspace with modal form to create synthetic ledger entries via `POST /transactions`.
 - Alerts view featuring status badges and audit evidence deep links.
@@ -91,7 +91,7 @@ npm install
 npm run dev
 ```
 
-Set `NEXT_PUBLIC_API_BASE_URL` to your API endpoint and the Cognito variables to your user pool configuration. The app will redirect to the Hosted UI for sign-in and display the sandbox data after authentication.
+Set `NEXT_PUBLIC_API_BASE_URL` to your API endpoint and the Cognito variables to your user pool configuration. The app will redirect to the Hosted UI for sign-in and display the sandbox data after authentication. For quick local checks you can instead set `NEXT_PUBLIC_ENABLE_MOCK_AUTH=true` in `.env.local` to issue a mock session without Cognito.
 
 ## Deployment workflow
 

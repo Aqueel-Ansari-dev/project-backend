@@ -3,6 +3,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 const AUTH_STORAGE_KEY = 'beyla.sandbox.session';
+const allowMockAuth = process.env.NEXT_PUBLIC_ENABLE_MOCK_AUTH === 'true';
+const mockUserEmail = process.env.NEXT_PUBLIC_MOCK_USER_EMAIL ?? 'demo@beyla.local';
+const mockUserName = process.env.NEXT_PUBLIC_MOCK_USER_NAME ?? 'Sandbox User';
 
 type GlobalBase64 = {
   atob?: (value: string) => string;
@@ -108,6 +111,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    if (allowMockAuth) {
+      const mockTokens: AuthTokens = {
+        accessToken: 'mock-access-token',
+        idToken: 'mock-id-token',
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+      };
+      setState({
+        loading: false,
+        tokens: mockTokens,
+        user: {
+          email: mockUserEmail,
+          given_name: mockUserName.split(' ')[0] ?? 'Sandbox',
+          family_name: mockUserName.split(' ').slice(1).join(' ') || 'User',
+          sub: 'mock-user',
+        },
+      });
+      try {
+        window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(mockTokens));
+      } catch (err) {
+        console.warn('Unable to persist mock session', err);
+      }
+      return;
+    }
+
     let initialTokens: AuthTokens | undefined;
     try {
       const stored = window.localStorage.getItem(AUTH_STORAGE_KEY);
@@ -163,6 +190,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = useCallback(() => {
+    if (allowMockAuth) {
+      const mockTokens: AuthTokens = {
+        accessToken: 'mock-access-token',
+        idToken: 'mock-id-token',
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+      };
+      const mockUser: AuthUser = {
+        email: mockUserEmail,
+        given_name: mockUserName.split(' ')[0] ?? 'Sandbox',
+        family_name: mockUserName.split(' ').slice(1).join(' ') || 'User',
+        sub: 'mock-user',
+      };
+      setTokens(mockTokens, mockUser);
+      return;
+    }
+
     const { domain, clientId, redirectUri } = getConfig();
     if (!domain || !clientId || !redirectUri) return;
     const url = new URL(`https://${domain}/oauth2/authorize`);
@@ -174,6 +217,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(() => {
+    if (allowMockAuth) {
+      setTokens(undefined, undefined);
+      return;
+    }
+
     const { domain, clientId, logoutUri } = getConfig();
     setTokens(undefined, undefined);
     if (!domain || !clientId || !logoutUri) return;
