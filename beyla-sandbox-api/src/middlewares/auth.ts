@@ -16,26 +16,45 @@ declare module 'express-serve-static-core' {
 
 const publicPaths = new Set(['/health/live', '/health/ready']);
 
+function extractAdminKey(req: Request): string | undefined {
+  const headerKey = req.header('x-admin-key');
+  if (headerKey?.trim()) {
+    return headerKey.trim();
+  }
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return undefined;
+  }
+
+  const [scheme, token] = authHeader.split(/\s+/);
+  if (!token) {
+    return undefined;
+  }
+
+  if (scheme?.toLowerCase() === 'apikey' || scheme?.toLowerCase() === 'bearer') {
+    return token;
+  }
+
+  return undefined;
+}
+
 function authorizeWithAdminKey(req: Request): AuthenticatedUser | undefined {
   const adminKey = process.env.ADMIN_API_KEY;
   if (!adminKey) {
     return undefined;
   }
 
-  const headerKey = req.header('x-admin-key');
-  if (headerKey && headerKey === adminKey) {
-    return { id: 'admin-api-key', type: 'api-key' };
+  const providedKey = extractAdminKey(req);
+  if (!providedKey) {
+    throw new Error('Missing admin key');
   }
 
-  const authHeader = req.headers.authorization;
-  if (authHeader) {
-    const [scheme, token] = authHeader.split(' ');
-    if (scheme === 'Bearer' && token === adminKey) {
-      return { id: 'admin-api-key', type: 'api-key' };
-    }
+  if (providedKey !== adminKey) {
+    throw new Error('Invalid admin key');
   }
 
-  return undefined;
+  return { id: 'admin-api-key', type: 'api-key' };
 }
 
 export function authMiddleware(req: Request, res: Response, next: NextFunction) {
@@ -43,10 +62,14 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
     return next();
   }
 
-  const adminUser = authorizeWithAdminKey(req);
-  if (adminUser) {
-    req.user = adminUser;
-    return next();
+  try {
+    const adminUser = authorizeWithAdminKey(req);
+    if (adminUser) {
+      req.user = adminUser;
+      return next();
+    }
+  } catch (err) {
+    return res.status(401).json({ message: (err as Error).message });
   }
 
   const authHeader = req.headers.authorization;
@@ -62,7 +85,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
   try {
     const secret = process.env.JWT_SECRET;
     if (!secret) {
-      throw new Error('JWT secret not configured. Set JWT_SECRET or use ADMIN_API_KEY.');
+      throw new Error('JWT secret not configured. Set JWT_SECRET or supply ADMIN_API_KEY.');
     }
 
     const decoded = jwt.verify(token, secret) as jwt.JwtPayload;

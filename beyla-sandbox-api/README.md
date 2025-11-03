@@ -39,9 +39,11 @@ TypeScript Express application serving the sandbox endpoints used by the Beyla a
    docker compose down
    ```
 
-For quick developer testing you can set `ADMIN_API_KEY` in `.env` and supply the same value via either the `x-admin-key`
-header or an `Authorization: Bearer <key>` header. If you prefer JWT flows, generate a short-lived HS256 token signed with the
-configured `JWT_SECRET`.
+For quick developer testing you can set `ADMIN_API_KEY` in `.env` and send the same value on every request using either the
+`x-admin-key: <key>` header or `Authorization: ApiKey <key>` (a `Bearer` scheme is still accepted for backwards compatibility).
+When `ADMIN_API_KEY` is defined the middleware requires one of those headers and responds with `401 Missing admin key` or
+`401 Invalid admin key` if the value is absent or incorrect. If you prefer JWT flows, generate a short-lived HS256 token
+signed with the configured `JWT_SECRET` instead.
 
 ### Accessing the NayaOne synthetic dataset
 
@@ -54,7 +56,7 @@ following environment variables when running locally or in the cloud:
 Example request:
 
 ```bash
-curl -H "x-admin-key: <admin-key>" \
+curl -H "Authorization: ApiKey <admin-key>" \
      "http://localhost:8080/datasets/nayaone?offset=0&limit=10"
 ```
 
