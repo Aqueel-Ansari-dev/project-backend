@@ -3,32 +3,35 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+
+    "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write \"src/**/*.{ts,js}\"",
-    "migrate": "ts-node --esm scripts/migrate.ts",
-    "seed": "ts-node --esm scripts/seed.ts"
+    "migrate": "tsx scripts/migrate.ts",
+    "seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
     "aws-sdk": "^2.1616.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "express-rate-limit": "^7.3.1",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.11.5",
     "pino": "^9.0.0",
     "pino-http": "^10.3.0",
-    "uuid": "^9.0.1",
-    "express-rate-limit": "^7.3.1"
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.5",
-    "@types/node": "^20.16.5",
+    "@types/node": "^20.19.24",
     "@types/uuid": "^9.0.7",
+    "@typescript-eslint/eslint-plugin": "^8.0.1",
+    "@typescript-eslint/parser": "^8.0.1",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.29.1",
@@ -39,5 +42,7 @@
     "typescript": "^5.6.2",
     "@typescript-eslint/eslint-plugin": "^8.0.1",
     "@typescript-eslint/parser": "^8.0.1"
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
   }
 }

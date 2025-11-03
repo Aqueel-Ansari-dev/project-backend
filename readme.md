@@ -1,5 +1,6 @@
 # Beyla Sandbox Platform
 
+
 This repository contains the Beyla sandbox backend API, AWS infrastructure as code, and a mobile-friendly Next.js frontend for demoing the experience end-to-end.
 
 ## Projects
