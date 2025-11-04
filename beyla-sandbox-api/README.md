@@ -50,6 +50,7 @@ following environment variables when running locally or in the cloud:
 Example request:
 
 ```bash
+
 curl "http://localhost:8080/datasets/nayaone?offset=0"
 ```
 
