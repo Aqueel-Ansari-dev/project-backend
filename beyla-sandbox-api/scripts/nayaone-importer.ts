@@ -322,7 +322,7 @@ export async function importNayaOneData(
         const accountResult = await client.query<{ id: string }>(
           `INSERT INTO accounts (name, currency, external_id, source, raw)
            VALUES ($1, $2, $3, 'nayaone', $4)
-           ON CONFLICT (external_id) DO UPDATE SET
+           ON CONFLICT ON CONSTRAINT accounts_external_id_unique DO UPDATE SET
              name = EXCLUDED.name,
              currency = EXCLUDED.currency,
              raw = EXCLUDED.raw,
@@ -340,7 +340,7 @@ export async function importNayaOneData(
         await client.query(
           `INSERT INTO balances (account_id, as_of_date, amount, currency, external_id, source)
            VALUES ($1, $2, $3, $4, $5, 'nayaone')
-           ON CONFLICT (account_id, as_of_date)
+           ON CONFLICT ON CONSTRAINT balances_account_as_of_unique
            DO UPDATE SET amount = EXCLUDED.amount, currency = EXCLUDED.currency, source = 'nayaone', external_id = EXCLUDED.external_id`,
           [accountId, normalized.balanceAsOf, normalized.balanceAmount, normalized.currency, `${normalized.syntheticId}:${normalized.balanceAsOf}`]
         );
@@ -351,7 +351,7 @@ export async function importNayaOneData(
           await client.query(
             `INSERT INTO transactions (account_id, ts, amount, currency, description, category, direction, external_id, source)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'nayaone')
-             ON CONFLICT (external_id) DO NOTHING`,
+             ON CONFLICT ON CONSTRAINT transactions_external_id_unique DO NOTHING`,
             [
               accountId,
               transaction.timestamp,
@@ -371,7 +371,7 @@ export async function importNayaOneData(
           await client.query(
             `INSERT INTO alerts (account_id, type, status, payload, external_id, source)
              VALUES ($1, $2, $3, $4, $5, 'nayaone')
-             ON CONFLICT (external_id) DO UPDATE SET status = EXCLUDED.status, payload = EXCLUDED.payload, source = 'nayaone'`,
+             ON CONFLICT ON CONSTRAINT alerts_external_id_unique DO UPDATE SET status = EXCLUDED.status, payload = EXCLUDED.payload, source = 'nayaone'`,
             [accountId, alert.type, alert.status, JSON.stringify(alert.payload), alert.externalId]
           );
         }
