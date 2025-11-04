@@ -5,6 +5,8 @@ import { Pool } from 'pg';
 
 import 'dotenv/config';
 
+import { importNayaOneData } from './nayaone-importer.js';
+
 const client = new Pool({ connectionString: process.env.DB_URL });
 
 async function run() {
@@ -26,9 +28,21 @@ run()
   .then(() => {
     // eslint-disable-next-line no-console
     console.log('Migrations applied successfully');
-    return client.end();
+    return importNayaOneData(client).then((stats) => {
+      if (stats.skipped) {
+        // eslint-disable-next-line no-console
+        console.log('NayaOne dataset import skipped (accounts already present)');
+      } else {
+        // eslint-disable-next-line no-console
+        console.log(
+          `Imported ${stats.accounts} accounts, ${stats.balances} balances, ${stats.transactions} transactions, ${stats.alerts} alerts from NayaOne dataset`
+        );
+      }
+    });
   })
+  .then(() => client.end())
   .catch((err) => {
+    // eslint-disable-next-line no-console
     console.error(err);
     return client.end().then(() => process.exit(1));
   });

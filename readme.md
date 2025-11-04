@@ -12,7 +12,7 @@ Key features:
 
 - REST endpoints `/health`, `/balances`, `/transactions`, `/alerts` available without authentication for sandbox testing.
 - `/datasets/nayaone` proxy that securely fetches the synthetic UK SME dataset from NayaOne using the configured sandpit key.
-- PostgreSQL schema and SQL migrations plus simple seeding script for synthetic account data.
+- PostgreSQL schema, migrations, and ingestion scripts that hydrate the ledger from the NayaOne dataset (accounts, balances, transactions, alerts).
 - Evidence log writer that publishes structured audit JSON to S3 using the agreed key format and records metadata to PostgreSQL.
 - Optional SNS fan-out for agent observability by publishing each evidence payload to the `agent-events` topic.
 - Request correlation IDs, structured Pino logging, and Dockerfile ready for multi-stage production images.
@@ -24,9 +24,9 @@ cd beyla-sandbox-api
 docker compose up -d db   # provision local Postgres via Docker
 npm install
 cp .env.example .env
-# update AWS credentials and overrides if needed
-npm run migrate
-npm run seed
+# update AWS credentials, DB URL, and the NayaOne sandpit key if needed
+npm run migrate   # applies migrations and imports the NayaOne dataset when configured
+npm run seed      # optional: reset and re-import the dataset
 npm run dev
 ```
 

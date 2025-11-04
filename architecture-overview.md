@@ -44,6 +44,7 @@ graph LR
 * **Request context middleware** exposes the correlation ID, actor, and client IP to downstream handlers so audit records stay consistent.【F:beyla-sandbox-api/src/middlewares/request-context.ts†L1-L26】
 * **Data access layer** wraps SQL queries for listing balances and transactions, creating ledger entries, and recording alert payloads, providing the shapes consumed by both API and frontend.【F:beyla-sandbox-api/src/db/account-repository.ts†L1-L118】
 * **External dataset proxy** validates pagination parameters and forwards authenticated calls to NayaOne, shielding client code from sandpit headers while preserving audit context.【F:beyla-sandbox-api/src/routes/datasets.ts†L1-L34】【F:beyla-sandbox-api/src/services/nayaone.ts†L1-L58】
+* **Dataset ingestion** runs during migrations and explicit seed operations, paging through the NayaOne dataset to hydrate accounts, balances, transactions, and derived alerts with lineage preserved via `external_id` columns.【F:beyla-sandbox-api/scripts/nayaone-importer.ts†L1-L236】【F:beyla-sandbox-api/src/db/migrations/0002_nayaone_lineage.sql†L1-L33】
 * **Evidence pipeline** writes structured JSON documents to S3 under the agreed key prefix and optionally publishes the same payload to SNS for observability. Each write also logs metadata into the `evidence_events` table for traceability.【F:beyla-sandbox-api/src/services/evidence.ts†L1-L57】【F:beyla-sandbox-api/src/services/audit-log.ts†L1-L19】
 
 ### Data model
@@ -108,7 +109,7 @@ When deploying, publish a new API image to ECR, update the Terraform variables (
 
 ## Local development workflow
 
-1. **Database** – `docker compose up -d db` boots the Postgres container, and `npm run migrate && npm run seed` prepares sample data.【F:readme.md†L16-L37】
+1. **Database** – `docker compose up -d db` boots the Postgres container, `npm run migrate` applies schema changes and ingests the NayaOne dataset, and `npm run seed` forces a full re-import if you need a clean reset.【F:readme.md†L16-L35】【F:beyla-sandbox-api/scripts/migrate.ts†L1-L43】【F:beyla-sandbox-api/scripts/seed.ts†L1-L27】
 2. **API** – `npm run dev` launches the Express server with hot reload, writing evidence to the configured bucket or logging warnings if AWS credentials are absent.【F:beyla-sandbox-api/src/index.ts†L1-L61】
 3. **Frontend** – Run `npm run dev` in `frontend/` with `NEXT_PUBLIC_API_BASE_URL` pointing at `http://localhost:8080`. The sandbox session automatically renders the operator identity without additional setup.【F:frontend/README.md†L13-L52】【F:frontend/lib/auth-context.tsx†L1-L44】
 
