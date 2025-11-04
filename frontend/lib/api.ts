@@ -23,6 +23,8 @@ export interface Transaction {
   description: string | null;
   category: string | null;
   direction: 'in' | 'out';
+  source?: string | null;
+  external_id?: string | null;
 }
 
 export interface Alert {
@@ -33,6 +35,8 @@ export interface Alert {
   status: string;
   created_at: string;
   payload: Record<string, unknown>;
+  source?: string | null;
+  external_id?: string | null;
 }
 
 export type NayaOneRecord = Record<string, unknown>;

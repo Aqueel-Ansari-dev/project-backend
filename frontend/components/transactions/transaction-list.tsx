@@ -2,6 +2,7 @@ import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
 import { Transaction } from '../../lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { cn } from '../ui/cn';
+import { Badge } from '../ui/badge';
 
 export function TransactionList({
   transactions,
@@ -15,7 +16,10 @@ export function TransactionList({
     <Card>
       <CardHeader className="flex-col items-start gap-2">
         <CardTitle>Recent activity</CardTitle>
-        <p className="text-sm text-slate-400">Synthetic ledger data seeded in the sandbox database.</p>
+        <p className="text-sm text-slate-400">
+          Synthetic ledger movements from the NayaOne dataset. Use these entries to narrate agentic decisions and evidence
+          working capital changes.
+        </p>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
@@ -23,6 +27,26 @@ export function TransactionList({
           {visible.map((transaction) => {
             const isIn = transaction.direction === 'in';
             const amount = Number(transaction.amount);
+            const category = transaction.category ?? 'general';
+            const categoryVariant =
+              category === 'revenue'
+                ? 'success'
+                : category === 'cashflow'
+                  ? 'warning'
+                  : category === 'operations'
+                    ? 'critical'
+                    : 'default';
+            const categoryLabel = category
+              .replace(/_/g, ' ')
+              .split(' ')
+              .map((part) => (part ? part.charAt(0).toUpperCase() + part.slice(1) : part))
+              .join(' ');
+            const sourceLabel =
+              transaction.source && transaction.source.toLowerCase() === 'nayaone'
+                ? 'NayaOne synthetic ledger'
+                : transaction.source
+                  ? transaction.source.charAt(0).toUpperCase() + transaction.source.slice(1)
+                  : 'Sandbox';
             return (
               <div
                 key={transaction.id}
@@ -39,9 +63,17 @@ export function TransactionList({
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-white">{transaction.description ?? 'Sandbox transaction'}</p>
-                    <p className="text-xs text-slate-400">
-                      {transaction.account_name ?? 'Account'} • {new Date(transaction.ts).toLocaleString()}
-                    </p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <Badge variant={categoryVariant}>{categoryLabel}</Badge>
+                      <p className="text-xs text-slate-400">
+                        {transaction.account_name ?? 'Account'} •{' '}
+                        {new Date(transaction.ts).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </p>
+                    </div>
                   </div>
                 </div>
                 <div className="text-right">
@@ -54,7 +86,7 @@ export function TransactionList({
                         })
                       : transaction.amount}
                   </p>
-                  {transaction.category && <p className="text-xs text-slate-500">{transaction.category}</p>}
+                  <p className="text-xs text-slate-500">Source: {sourceLabel}</p>
                 </div>
               </div>
             );

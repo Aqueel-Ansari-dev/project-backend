@@ -26,9 +26,10 @@ export default function NayaOneDatasetPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-white">NayaOne dataset</h1>
+          <h1 className="text-2xl font-semibold text-white">Synthetic ledger explorer</h1>
           <p className="text-sm text-slate-400">
-            Explore the synthetic UK business current accounts returned by the NayaOne sandpit.
+            This feed is the mock core banking system for the Digital CFO experience. Every account, balance, and alert in the
+            platform is derived from these NayaOne sandpit records.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -37,6 +38,18 @@ export default function NayaOneDatasetPage() {
           </Button>
         </div>
       </div>
+      <Card className="bg-slate-900/70">
+        <CardContent className="space-y-2 p-5 text-sm text-slate-300">
+          <p>
+            • Import this dataset via <code className="rounded bg-slate-800 px-1 py-0.5 text-xs">npm run migrate</code> or{' '}
+            <code className="rounded bg-slate-800 px-1 py-0.5 text-xs">npm run seed</code> to hydrate the sandbox ledger.
+          </p>
+          <p>
+            • Financial agents query the same records through the backend API when generating recommendations and evidence logs.
+          </p>
+          <p>• Use the pagination controls below to inspect raw company metadata and link it back to ledger activity.</p>
+        </CardContent>
+      </Card>
       {error && <p className="rounded-lg border border-red-500/60 bg-red-500/10 p-4 text-sm text-red-200">{error}</p>}
       {loading && !records.length ? (
         <div className="flex h-64 items-center justify-center rounded-xl border border-slate-800 bg-slate-900/40">
