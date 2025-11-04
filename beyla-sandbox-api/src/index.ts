@@ -50,10 +50,11 @@ app.use(
   })
 );
 app.use('/health', healthRouter);
-app.use('/balances', authMiddleware, requestContextMiddleware, balancesRouter);
-app.use('/transactions', authMiddleware, requestContextMiddleware, transactionsRouter);
-app.use('/alerts', authMiddleware, requestContextMiddleware, alertsRouter);
-app.use('/datasets', authMiddleware, requestContextMiddleware, datasetsRouter);
+app.use(authMiddleware);
+app.use('/balances', requestContextMiddleware, balancesRouter);
+app.use('/transactions', requestContextMiddleware, transactionsRouter);
+app.use('/alerts', requestContextMiddleware, alertsRouter);
+app.use('/datasets', requestContextMiddleware, datasetsRouter);
 
 app.use(errorHandler);
 

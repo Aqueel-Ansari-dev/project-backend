@@ -5,7 +5,7 @@ TypeScript Express application serving the sandbox endpoints used by the Beyla a
 ## Features
 
 - Health, balances, transactions, and alerts endpoints.
-- Auth middleware that accepts either JWTs (HS256) or a developer admin API key for non-health routes.
+- Open endpoints for balances, transactions, alerts, and dataset exploration (no authentication required in the sandbox).
 - Request correlation IDs, pino structured logging, and configurable rate limiting.
 - Evidence writer storing JSON payloads in S3 and mirroring metadata to PostgreSQL + SNS.
 - SQL migrations and seed script for synthetic sandbox data.
@@ -27,7 +27,7 @@ TypeScript Express application serving the sandbox endpoints used by the Beyla a
    ```bash
    npm install
    cp .env.example .env
-   # update AWS credentials, JWT secret, admin API key, and overrides if needed
+   # update AWS credentials and overrides if needed
    npm run migrate
    npm run seed
    npm run dev
@@ -38,12 +38,6 @@ TypeScript Express application serving the sandbox endpoints used by the Beyla a
    ```bash
    docker compose down
    ```
-
-For quick developer testing you can set `ADMIN_API_KEY` in `.env` and send the same value on every request using either the
-`x-admin-key: <key>` header or `Authorization: ApiKey <key>` (a `Bearer` scheme is still accepted for backwards compatibility).
-When `ADMIN_API_KEY` is defined the middleware requires one of those headers and responds with `401 Missing admin key` or
-`401 Invalid admin key` if the value is absent or incorrect. If you prefer JWT flows, generate a short-lived HS256 token
-signed with the configured `JWT_SECRET` instead.
 
 ### Accessing the NayaOne synthetic dataset
 
@@ -56,12 +50,12 @@ following environment variables when running locally or in the cloud:
 Example request:
 
 ```bash
-curl -H "Authorization: ApiKey <admin-key>" \
-     "http://localhost:8080/datasets/nayaone?offset=0&limit=10"
+
+curl "http://localhost:8080/datasets/nayaone?offset=0"
 ```
 
 The endpoint enforces offsets as non-negative multiples of 10 per the sandpit API contract. Responses include `records`
-containing the upstream payload and a `nextOffset` value when more data is available.
+containing the upstream payload, the `pageSize` returned by NayaOne, and a `nextOffset` value when more data is available.
 
 ## Scripts
 

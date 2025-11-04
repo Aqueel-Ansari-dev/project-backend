@@ -4,13 +4,12 @@ This document provides an end-to-end description of the Beyla sandbox platform, 
 
 ## System context
 
-The diagram below highlights the core actors and the managed services that participate in a typical session. Cognito and AWS services are shown as external dependencies, while the frontend, API, and database layers live in this repository.
+The diagram below highlights the core actors and the managed services that participate in a typical session. AWS services are shown as external dependencies, while the frontend, API, and database layers live in this repository.
 
 ```mermaid
 graph LR
   User[Operator on Mobile or Desktop]
   Browser[Next.js Frontend (frontend/)]
-  Cognito[AWS Cognito Hosted UI]
   API[Express API (beyla-sandbox-api/)]
   Postgres[(RDS PostgreSQL)]
   S3[S3 Evidence Bucket]
@@ -18,17 +17,15 @@ graph LR
   NayaOne[NayaOne Synthetic Dataset API]
 
   User -->|https| Browser
-  Browser -->|OIDC redirect| Cognito
-  Cognito -->|ID/Access tokens| Browser
-  Browser -->|JWT/API-key calls| API
+  Browser -->|Fetch + JSON| API
   API -->|SQL queries| Postgres
   API -->|Evidence JSON| S3
   API -->|Event fan-out| SNS
   API -->|Outbound fetch| NayaOne
 ```
 
-* Operators authenticate with Cognito (or the local mock mode) and interact with the responsive dashboard running in Next.js.【F:frontend/lib/auth-context.tsx†L1-L256】
-* Authenticated requests are sent to the Express API, which enforces JWT verification (or a developer admin API key) and mounts the health, balance, transaction, and alert routes behind shared middleware for correlation, rate limiting, and error handling.【F:beyla-sandbox-api/src/index.ts†L1-L61】【F:beyla-sandbox-api/src/middlewares/auth.ts†L1-L79】
+* Operators interact with the responsive dashboard running in Next.js; the sandbox build keeps a lightweight in-memory session without Cognito or JWT requirements.【F:frontend/lib/auth-context.tsx†L1-L44】
+* Requests are sent directly to the Express API, which mounts the health, balance, transaction, alert, and dataset routes behind shared middleware for correlation, rate limiting, and error handling.【F:beyla-sandbox-api/src/index.ts†L1-L66】【F:beyla-sandbox-api/src/middlewares/auth.ts†L1-L20】
 * The API persists business data to PostgreSQL and writes audit evidence to S3 and SNS so downstream systems can replay or monitor events.【F:beyla-sandbox-api/src/db/migrations/0001_init.sql†L1-L48】【F:beyla-sandbox-api/src/services/evidence.ts†L1-L57】
 * For synthetic reference data, the API proxies secure requests to the external NayaOne dataset using the configured sandpit key.【F:beyla-sandbox-api/src/routes/datasets.ts†L1-L34】【F:beyla-sandbox-api/src/services/nayaone.ts†L1-L58】
 * Infrastructure components—VPC, ECS, RDS, S3, SNS/SQS, IAM, and supporting security groups—are provisioned with Terraform under `infra-aws/` for parity across environments.【F:infra-aws/main.tf†L1-L76】
@@ -37,14 +34,13 @@ graph LR
 
 ### Frontend (`frontend/`)
 
-* **Authentication context** stores Cognito tokens (or mock/admin credentials) in `localStorage`, exposes sign-in/out helpers, and decodes JWT payloads for user metadata.【F:frontend/lib/auth-context.tsx†L1-L260】
-* **Data hooks** encapsulate API fetches for balances, transactions, alerts, evidence links, and the external NayaOne dataset, automatically attaching bearer tokens or the configured admin key and normalizing errors for UI components.【F:frontend/lib/api.ts†L1-L240】
+* **Sandbox session context** exposes a fixed operator identity sourced from environment variables so UI components can render user metadata without Cognito dependencies.【F:frontend/lib/auth-context.tsx†L1-L44】
+* **Data hooks** encapsulate API fetches for balances, transactions, alerts, evidence links, and the external NayaOne dataset with automatic error handling and state tracking.【F:frontend/lib/api.ts†L1-L184】
 * **UI composition** uses a responsive shell with Tailwind and shadcn-inspired primitives to present dashboard KPIs, transaction modals, alert badges, and settings forms.
 
 ### API (`beyla-sandbox-api/`)
 
-* **HTTP pipeline** adds JSON parsing, permissive CORS, request correlation, Pino request logging, and rate limiting before delegating to route handlers.【F:beyla-sandbox-api/src/index.ts†L1-L61】
-* **Auth middleware** validates bearer tokens with the configured JWT secret or accepts the shared admin API key, projecting identity metadata onto the Express `req.user` object.【F:beyla-sandbox-api/src/middlewares/auth.ts†L1-L79】
+* **HTTP pipeline** adds JSON parsing, permissive CORS, request correlation, sandbox identity stamping, Pino request logging, and rate limiting before delegating to route handlers.【F:beyla-sandbox-api/src/index.ts†L1-L66】【F:beyla-sandbox-api/src/middlewares/auth.ts†L1-L20】
 * **Request context middleware** exposes the correlation ID, actor, and client IP to downstream handlers so audit records stay consistent.【F:beyla-sandbox-api/src/middlewares/request-context.ts†L1-L26】
 * **Data access layer** wraps SQL queries for listing balances and transactions, creating ledger entries, and recording alert payloads, providing the shapes consumed by both API and frontend.【F:beyla-sandbox-api/src/db/account-repository.ts†L1-L118】
 * **External dataset proxy** validates pagination parameters and forwards authenticated calls to NayaOne, shielding client code from sandpit headers while preserving audit context.【F:beyla-sandbox-api/src/routes/datasets.ts†L1-L34】【F:beyla-sandbox-api/src/services/nayaone.ts†L1-L58】
@@ -77,8 +73,8 @@ sequenceDiagram
   participant SNS as SNS Topic
 
   U->>FE: Submit "Add Transaction"
-  FE->>API: POST /transactions (Bearer token or admin key)
-  API->>API: Validate credentials & request body
+  FE->>API: POST /transactions (JSON body)
+  API->>API: Validate payload & build audit context
   API->>DB: INSERT transaction row
   DB-->>API: Created transaction
   API->>S3: PutObject evidence JSON
@@ -87,7 +83,7 @@ sequenceDiagram
   FE-->>U: Refresh list & confirmation toast
 ```
 
-* The frontend uses the `useTransactions` hook to post the request and refresh its local state once the API responds.【F:frontend/lib/api.ts†L93-L142】
+* The frontend uses the `useTransactions` hook to post the request and refresh its local state once the API responds.【F:frontend/lib/api.ts†L75-L131】
 * The route handler validates input, writes the transaction, emits evidence, and returns the normalized payload for the UI.【F:beyla-sandbox-api/src/routes/transactions.ts†L1-L95】
 * `recordEvidenceEvent` captures the S3 key and correlation ID in Postgres so operators can audit what was written to object storage.【F:beyla-sandbox-api/src/services/audit-log.ts†L1-L19】
 
@@ -114,16 +110,16 @@ When deploying, publish a new API image to ECR, update the Terraform variables (
 
 1. **Database** – `docker compose up -d db` boots the Postgres container, and `npm run migrate && npm run seed` prepares sample data.【F:readme.md†L16-L37】
 2. **API** – `npm run dev` launches the Express server with hot reload, writing evidence to the configured bucket or logging warnings if AWS credentials are absent.【F:beyla-sandbox-api/src/index.ts†L1-L61】
-3. **Frontend** – Run `npm run dev` in `frontend/` with either `NEXT_PUBLIC_ADMIN_API_KEY` (matching the API) or `NEXT_PUBLIC_ENABLE_MOCK_AUTH=true` to bypass Cognito and exercise the UI against `http://localhost:8080`.【F:frontend/README.md†L17-L44】【F:frontend/lib/auth-context.tsx†L1-L260】
+3. **Frontend** – Run `npm run dev` in `frontend/` with `NEXT_PUBLIC_API_BASE_URL` pointing at `http://localhost:8080`. The sandbox session automatically renders the operator identity without additional setup.【F:frontend/README.md†L13-L52】【F:frontend/lib/auth-context.tsx†L1-L44】
 
 ## Security and compliance considerations
 
-* JWT validation or the shared admin key protects all non-health routes and propagates principal metadata into audit records for attribution.【F:beyla-sandbox-api/src/middlewares/auth.ts†L1-L79】【F:beyla-sandbox-api/src/middlewares/request-context.ts†L18-L25】
+* The sandbox middleware stamps each request with a fixed operator identity so audit records remain consistent even without Cognito or JWT enforcement in development environments.【F:beyla-sandbox-api/src/middlewares/auth.ts†L1-L20】【F:beyla-sandbox-api/src/middlewares/request-context.ts†L18-L25】
 * Every mutating request writes an immutable JSON trail to S3 and, optionally, SNS for monitoring tools to consume. Evidence keys include the environment, event date, and correlation ID to simplify retention policies and investigations.【F:beyla-sandbox-api/src/routes/transactions.ts†L59-L89】【F:beyla-sandbox-api/src/services/evidence.ts†L21-L57】
 * IAM roles from Terraform grant the ECS task least-privilege access to read secrets and write evidence objects, keeping database credentials in AWS Secrets Manager rather than baked into images.【F:infra-aws/main.tf†L40-L76】
 
 ## Extensibility roadmap
 
 * **Analytics consumers** can subscribe to the `agent-events` queue for near-real-time monitoring without modifying the API layer.【F:infra-aws/main.tf†L53-L58】
-* **Cognito integration** in production simply requires disabling mock auth and configuring the Hosted UI domain, client ID, and redirect URLs—no code changes needed thanks to the runtime environment variables.【F:frontend/lib/auth-context.tsx†L200-L248】
+* **Cognito integration** for production hardening can be layered on by replacing the sandbox auth provider with a Hosted UI flow using the existing environment variables scaffold.【F:frontend/README.md†L28-L45】
 * **Additional domains** (e.g., payments, KYC) can extend the API by adding new route modules and repositories while reusing the existing middleware, audit pipeline, and Terraform scaffolding.

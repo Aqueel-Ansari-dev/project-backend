@@ -2,20 +2,12 @@ import { URL } from 'node:url';
 
 const DEFAULT_ENDPOINT = 'https://data.nayaone.com/cah_synth_data';
 
-export interface NayaOneDatasetOptions {
-  offset?: number;
-  limit?: number;
-}
-
 export interface NayaOneDatasetResponse {
   records: Record<string, unknown>[];
   offset: number;
 }
 
-export async function fetchNayaOneDataset({
-  offset = 0,
-  limit = 10,
-}: NayaOneDatasetOptions = {}): Promise<NayaOneDatasetResponse> {
+export async function fetchNayaOneDataset(offset = 0): Promise<NayaOneDatasetResponse> {
   const apiKey = process.env.NAYAONE_API_KEY;
   if (!apiKey) {
     throw new Error('NAYAONE_API_KEY is not configured');
@@ -23,10 +15,6 @@ export async function fetchNayaOneDataset({
 
   if (offset < 0 || !Number.isFinite(offset)) {
     throw new Error('offset must be a positive number');
-  }
-
-  if (limit <= 0 || !Number.isFinite(limit)) {
-    throw new Error('limit must be a positive number');
   }
 
   const endpoint = process.env.NAYAONE_API_URL ?? DEFAULT_ENDPOINT;

@@ -1,19 +1,16 @@
 # Beyla Sandbox Frontend
 
-A responsive Next.js 14 + Tailwind dashboard for the Beyla sandbox API. The app integrates with an AWS Cognito Hosted UI for authentication and surfaces balances, transactions, alerts, audit evidence links, and the synthetic NayaOne dataset exposed by the backend proxy.
+A responsive Next.js 14 + Tailwind dashboard for the Beyla sandbox API. The app is tuned for mobile and desktop layouts, surfaces balances, transactions, alerts, audit evidence links, and the synthetic NayaOne dataset exposed by the backend proxy, and now runs without requiring Cognito authentication for local sandbox testing.
 
 ## Prerequisites
 
 - Node.js 20+
 - npm 10+
-- Access to the Beyla sandbox API and Cognito user pool
+- Access to the Beyla sandbox API
 
 ## Getting started
 
-1. Copy `.env.example` to `.env.local` and set the environment variables for your API base URL and Cognito user pool details.
-   - For developer-only testing you can set `NEXT_PUBLIC_ADMIN_API_KEY` to match the API's `ADMIN_API_KEY`. The UI will
-     automatically attach the key to requests and skip the Cognito login screen.
-   - For quick local smoke tests you can flip `NEXT_PUBLIC_ENABLE_MOCK_AUTH` to `true` to bypass Cognito and sign in with a mock sandbox user.
+1. Copy `.env.example` to `.env.local` and set the environment variables for your API base URL and optional display metadata.
 2. Install dependencies and start the development server:
 
 ```bash
@@ -21,23 +18,21 @@ npm install
 npm run dev
 ```
 
-3. Open [http://localhost:3000](http://localhost:3000) in your browser. On first load you will be redirected to the Cognito Hosted UI for sign-in.
+3. Open [http://localhost:3000](http://localhost:3000) in your browser. The dashboard will load immediately without a sign-in flow.
 
 ### Environment variables
 
 | Variable | Description |
 | --- | --- |
 | `NEXT_PUBLIC_API_BASE_URL` | Base URL for the sandbox API (e.g. `http://localhost:8080`). |
-| `NEXT_PUBLIC_COGNITO_DOMAIN` | Cognito Hosted UI domain (without protocol). |
-| `NEXT_PUBLIC_COGNITO_CLIENT_ID` | Cognito app client ID. |
-| `NEXT_PUBLIC_COGNITO_REDIRECT_URI` | URL Cognito redirects back to after sign-in (must be whitelisted). |
-| `NEXT_PUBLIC_COGNITO_LOGOUT_URI` | URL Cognito redirects back to after logout. |
-| `NEXT_PUBLIC_COGNITO_REGION` | AWS region of the Cognito user pool. |
-| `NEXT_PUBLIC_COGNITO_USER_POOL_ID` | Cognito user pool identifier (used for token audience validation). |
-| `NEXT_PUBLIC_ADMIN_API_KEY` | Shared admin key for local-only development. When set, the UI auto-authenticates and adds the key to API calls. |
-| `NEXT_PUBLIC_ENABLE_MOCK_AUTH` | When `true`, bypasses Cognito and issues a mock session for local development. |
-| `NEXT_PUBLIC_MOCK_USER_EMAIL` | Email shown for the mock session (if mock auth enabled). |
-| `NEXT_PUBLIC_MOCK_USER_NAME` | Display name for the mock session (if mock auth enabled). |
+| `NEXT_PUBLIC_COGNITO_DOMAIN` | *(Optional)* Cognito Hosted UI domain reserved for future secure deployments. |
+| `NEXT_PUBLIC_COGNITO_CLIENT_ID` | *(Optional)* Cognito app client ID. |
+| `NEXT_PUBLIC_COGNITO_REDIRECT_URI` | *(Optional)* URL Cognito redirects back to after sign-in. |
+| `NEXT_PUBLIC_COGNITO_LOGOUT_URI` | *(Optional)* URL Cognito redirects back to after logout. |
+| `NEXT_PUBLIC_COGNITO_REGION` | *(Optional)* AWS region of the Cognito user pool. |
+| `NEXT_PUBLIC_COGNITO_USER_POOL_ID` | *(Optional)* Cognito user pool identifier. |
+| `NEXT_PUBLIC_SANDBOX_USER_EMAIL` | Email shown in the header while running without Cognito. |
+| `NEXT_PUBLIC_SANDBOX_USER_NAME` | Display name shown in the header while running without Cognito. |
 
 ## Available scripts
 
@@ -68,7 +63,7 @@ The frontend is optimized for deployment on Vercel or AWS CloudFront. Build the 
 
 ## Demo checklist
 
-- Login via Cognito Hosted UI.
+- Load the dashboard without authentication.
 - View balances and recent transactions on the dashboard.
 - Create a synthetic transaction and observe it in the list.
 - Review alerts with status badges.

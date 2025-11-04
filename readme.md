@@ -10,7 +10,7 @@ TypeScript/Express service that exposes the sandbox API backed by PostgreSQL and
 
 Key features:
 
-- REST endpoints `/health`, `/balances`, `/transactions`, `/alerts` guarded by JWT authentication or a simple developer admin API key.
+- REST endpoints `/health`, `/balances`, `/transactions`, `/alerts` available without authentication for sandbox testing.
 - `/datasets/nayaone` proxy that securely fetches the synthetic UK SME dataset from NayaOne using the configured sandpit key.
 - PostgreSQL schema and SQL migrations plus simple seeding script for synthetic account data.
 - Evidence log writer that publishes structured audit JSON to S3 using the agreed key format and records metadata to PostgreSQL.
@@ -24,7 +24,7 @@ cd beyla-sandbox-api
 docker compose up -d db   # provision local Postgres via Docker
 npm install
 cp .env.example .env
-# update AWS credentials, JWT secret, admin API key, and overrides if needed
+# update AWS credentials and overrides if needed
 npm run migrate
 npm run seed
 npm run dev
@@ -34,11 +34,11 @@ Example requests:
 
 ```bash
 curl localhost:8080/health/live
-curl -H "x-admin-key: <admin-key>" localhost:8080/balances
-curl -H "x-admin-key: <admin-key>" -X POST localhost:8080/transactions \
+curl localhost:8080/balances
+curl -X POST localhost:8080/transactions \
   -H "Content-Type: application/json" \
   -d '{"account_id":"<uuid>","amount":250,"currency":"GBP","direction":"out"}'
-curl -H "x-admin-key: <admin-key>" "localhost:8080/datasets/nayaone?offset=0&limit=10"
+curl "localhost:8080/datasets/nayaone?offset=0"
 ```
 
 ### `infra-aws`
@@ -72,11 +72,11 @@ Outputs include VPC/subnet IDs, database endpoint, evidence bucket name, and ALB
 
 ### `frontend`
 
-Next.js 14 dashboard that authenticates with Cognito and consumes the sandbox API.
+Next.js 14 dashboard that consumes the sandbox API with a built-in sandbox session (no authentication required locally).
 
 Highlights:
 
-- Cognito Hosted UI authentication with id/access token persistence in `localStorage` (optional mock auth toggle for local smoke tests).
+- Sandbox session that displays a configurable operator name/email without requiring Cognito.
 - Dashboard home summarizing balances and recent transactions with responsive cards.
 - Transactions workspace with modal form to create synthetic ledger entries via `POST /transactions`.
 - Alerts view featuring status badges and audit evidence deep links.
@@ -93,7 +93,7 @@ npm install
 npm run dev
 ```
 
-Set `NEXT_PUBLIC_API_BASE_URL` to your API endpoint and the Cognito variables to your user pool configuration. For developer-only flows, set `NEXT_PUBLIC_ADMIN_API_KEY` to match the API's `ADMIN_API_KEY` so the dashboard auto-authenticates without Cognito. Alternatively, enable `NEXT_PUBLIC_ENABLE_MOCK_AUTH=true` in `.env.local` to issue a mock session without Cognito.
+Set `NEXT_PUBLIC_API_BASE_URL` to your API endpoint. The optional Cognito variables can remain for future production hardening, but local sandbox flows will work with only the API URL and optional display metadata.
 
 ## Deployment workflow
 

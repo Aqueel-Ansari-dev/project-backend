@@ -1,10 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useAuth } from './auth-context';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8080';
-const ADMIN_API_KEY = process.env.NEXT_PUBLIC_ADMIN_API_KEY;
 
 export interface Balance {
   id: string;
@@ -39,29 +37,16 @@ export interface Alert {
 
 export type NayaOneRecord = Record<string, unknown>;
 
-interface NayaOneDatasetPage {
-  records: NayaOneRecord[];
-  offset: number;
-  limit: number;
-  nextOffset: number | null;
-}
-
 interface ApiResponse<T> {
   data: T;
 }
 
-async function apiFetch<T>(path: string, init: RequestInit = {}, token?: string): Promise<T> {
+async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const url = path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
   const headers = new Headers(init.headers);
   headers.set('Accept', 'application/json');
   if (!(init.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
-  }
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
-  }
-  if (ADMIN_API_KEY) {
-    headers.set('x-admin-key', ADMIN_API_KEY);
   }
 
   const response = await fetch(url, { ...init, headers });
@@ -77,24 +62,22 @@ async function apiFetch<T>(path: string, init: RequestInit = {}, token?: string)
 }
 
 export function useBalances() {
-  const { tokens } = useAuth();
   const [data, setData] = useState<Balance[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
 
   const refresh = useCallback(async () => {
-    if (!tokens?.accessToken && !ADMIN_API_KEY) return;
     setLoading(true);
     setError(undefined);
     try {
-      const balances = await apiFetch<Balance[]>('/balances', {}, tokens.accessToken);
+      const balances = await apiFetch<Balance[]>('/balances');
       setData(balances);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load balances');
     } finally {
       setLoading(false);
     }
-  }, [tokens?.accessToken]);
+  }, []);
 
   useEffect(() => {
     refresh();
@@ -104,88 +87,79 @@ export function useBalances() {
 }
 
 export function useTransactions() {
-  const { tokens } = useAuth();
   const [data, setData] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
 
   const refresh = useCallback(async () => {
-    if (!tokens?.accessToken && !ADMIN_API_KEY) return;
     setLoading(true);
     setError(undefined);
     try {
-      const transactions = await apiFetch<Transaction[]>('/transactions', {}, tokens.accessToken);
+      const transactions = await apiFetch<Transaction[]>('/transactions');
       setData(transactions);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load transactions');
     } finally {
       setLoading(false);
     }
-  }, [tokens?.accessToken]);
+  }, []);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
 
   const create = useCallback(
-    async (payload: {
-      account_id: string;
-      amount: number;
-      currency: string;
-      description?: string;
-      category?: string;
-      direction: 'in' | 'out';
-    }) => {
-      if (!tokens?.accessToken && !ADMIN_API_KEY) throw new Error('Not authenticated');
-      const created = await apiFetch<Transaction>(
-        '/transactions',
-        {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        },
-        tokens?.accessToken
+      async (payload: {
+        account_id: string;
+        amount: number;
+        currency: string;
+        description?: string;
+        category?: string;
+        direction: 'in' | 'out';
+      }) => {
+        const created = await apiFetch<Transaction>(
+          '/transactions',
+          {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        }
       );
       await refresh();
       return created;
     },
-    [tokens?.accessToken, refresh]
+    [refresh]
   );
 
   return { data, loading, error, refresh, create };
 }
 
 export function useAlerts() {
-  const { tokens } = useAuth();
   const [data, setData] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
 
   const refresh = useCallback(async () => {
-    if (!tokens?.accessToken && !ADMIN_API_KEY) return;
     setLoading(true);
     setError(undefined);
     try {
-      const alerts = await apiFetch<Alert[]>('/alerts', {}, tokens.accessToken);
+      const alerts = await apiFetch<Alert[]>('/alerts');
       setData(alerts);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load alerts');
     } finally {
       setLoading(false);
     }
-  }, [tokens?.accessToken]);
+  }, []);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
 
   const fetchEvidence = useCallback(
-    async (alertId: string) => {
-      if (!tokens?.accessToken && !ADMIN_API_KEY) throw new Error('Not authenticated');
-      try {
-        const { url } = await apiFetch<{ url: string }>(
-          `/alerts/${alertId}/evidence`,
-          {},
-          tokens?.accessToken
+      async (alertId: string) => {
+        try {
+          const { url } = await apiFetch<{ url: string }>(
+          `/alerts/${alertId}/evidence`
         );
         return url;
       } catch (err) {
@@ -196,35 +170,33 @@ export function useAlerts() {
         );
       }
     },
-    [tokens?.accessToken]
+    []
   );
 
   return { data, loading, error, refresh, fetchEvidence };
 }
 
 export function useNayaOneDataset() {
-  const { tokens } = useAuth();
   const [records, setRecords] = useState<NayaOneRecord[]>([]);
   const [offset, setOffset] = useState(0);
-  const [limit] = useState(10);
   const [nextOffset, setNextOffset] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
 
   const hasMore = useMemo(() => nextOffset !== null, [nextOffset]);
 
-    const loadPage = useCallback(
-      async (requestedOffset: number, append: boolean) => {
-        if (!tokens?.accessToken && !ADMIN_API_KEY) return;
+  const loadPage = useCallback(
+    async (requestedOffset: number, append: boolean) => {
         setLoading(true);
         setError(undefined);
 
         try {
-          const page = await apiFetch<NayaOneDatasetPage>(
-            `/datasets/nayaone?offset=${requestedOffset}&limit=${limit}`,
-            {},
-            tokens?.accessToken
-          );
+          const page = await apiFetch<{
+            records: NayaOneRecord[];
+            offset: number;
+            pageSize: number;
+            nextOffset: number | null;
+          }>(`/datasets/nayaone?offset=${requestedOffset}`);
 
           setOffset(requestedOffset);
           setNextOffset(page.nextOffset);
@@ -234,9 +206,9 @@ export function useNayaOneDataset() {
         } finally {
           setLoading(false);
         }
-      },
-      [limit, tokens?.accessToken]
-    );
+    },
+    []
+  );
 
   useEffect(() => {
     loadPage(0, false).catch(() => undefined);
@@ -249,5 +221,5 @@ export function useNayaOneDataset() {
 
   const refresh = useCallback(async () => loadPage(0, false), [loadPage]);
 
-  return { records, offset, limit, loading, error, loadMore, hasMore, refresh };
+  return { records, offset, loading, error, loadMore, hasMore, refresh };
 }

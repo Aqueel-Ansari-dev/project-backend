@@ -12,24 +12,16 @@ router.get('/nayaone', async (req, res, next) => {
       throw new Error('offset must be a non-negative multiple of 10');
     }
 
-    const limitParam = req.query.limit ? Number(req.query.limit) : 10;
-    if (!Number.isFinite(limitParam) || limitParam <= 0 || limitParam > 100) {
-      res.status(400);
-      throw new Error('limit must be a positive number up to 100');
-    }
+    const { records } = await fetchNayaOneDataset(offsetParam);
 
-    const { records } = await fetchNayaOneDataset({
-      offset: offsetParam,
-      limit: limitParam,
-    });
-
-    const nextOffset = records.length === limitParam ? offsetParam + limitParam : null;
+    const pageSize = records.length;
+    const nextOffset = pageSize === 0 ? null : offsetParam + pageSize;
 
     res.json({
       data: {
         records,
         offset: offsetParam,
-        limit: limitParam,
+        pageSize,
         nextOffset,
       },
     });

@@ -2,10 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, LogOut, LogIn } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { useAuth } from '../../lib/auth-context';
-import { Button } from '../ui/button';
 import { cn } from '../ui/cn';
 
 const navItems = [
@@ -18,7 +17,7 @@ const navItems = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { isAuthenticated, loading, signIn, signOut, user } = useAuth();
+  const { user } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -51,31 +50,9 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             ))}
           </div>
-          <div className="flex items-center gap-3">
-            {!loading && isAuthenticated && (
-              <div className="hidden text-right text-xs leading-tight sm:block">
-                <p className="font-medium text-slate-200">{user?.email ?? 'Authenticated'}</p>
-                <p className="text-slate-400">Token active</p>
-              </div>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => (isAuthenticated ? signOut() : signIn())}
-              className="flex items-center gap-2"
-            >
-              {isAuthenticated ? (
-                <>
-                  <LogOut className="h-4 w-4" />
-                  Sign out
-                </>
-              ) : (
-                <>
-                  <LogIn className="h-4 w-4" />
-                  Sign in
-                </>
-              )}
-            </Button>
+          <div className="hidden text-right text-xs leading-tight sm:block">
+            <p className="font-medium text-slate-200">{user?.email ?? 'sandbox@beyla.local'}</p>
+            <p className="text-slate-400">Sandbox mode active</p>
           </div>
         </div>
         {mobileOpen && (
@@ -100,21 +77,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
       </header>
       <main className="flex-1 px-4 py-6 lg:px-6">
-        {!loading && !isAuthenticated ? (
-          <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
-            <h1 className="text-2xl font-semibold text-white">Welcome to the Beyla sandbox</h1>
-            <p className="mt-3 max-w-md text-sm text-slate-400">
-              Sign in with your Cognito credentials to view account balances, manage transactions, and review agent alerts.
-            </p>
-            <Button className="mt-6" onClick={() => signIn()}>
-              Sign in to continue
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-8 pb-16 lg:pb-10">
-            {children}
-          </div>
-        )}
+        <div className="space-y-8 pb-16 lg:pb-10">{children}</div>
       </main>
       <nav className="sticky bottom-0 z-40 border-t border-slate-800 bg-slate-950/80 backdrop-blur lg:hidden">
         <div className="flex justify-around">
