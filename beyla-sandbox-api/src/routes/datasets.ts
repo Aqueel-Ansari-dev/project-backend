@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import { fetchNayaOneDataset } from '../services/nayaone.js';
+import { fetchNayaOneDataset, NayaOneRequestError } from '../services/nayaone.js';
 
 const router = Router();
 
@@ -26,6 +26,14 @@ router.get('/nayaone', async (req, res, next) => {
       },
     });
   } catch (err) {
+    if (err instanceof NayaOneRequestError) {
+      res.status(err.status >= 400 ? err.status : 502);
+      const message = err.body?.trim()
+        ? 'Upstream dataset is temporarily unavailable. Please retry shortly.'
+        : err.message;
+      next(new Error(message));
+      return;
+    }
     next(err);
   }
 });

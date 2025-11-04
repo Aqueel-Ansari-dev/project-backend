@@ -2,6 +2,17 @@ import { URL } from 'node:url';
 
 const DEFAULT_ENDPOINT = 'https://data.nayaone.com/cah_synth_data';
 
+export class NayaOneRequestError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly body: string
+  ) {
+    super(message);
+    this.name = 'NayaOneRequestError';
+  }
+}
+
 export interface NayaOneDatasetResponse {
   records: Record<string, unknown>[];
   offset: number;
@@ -23,18 +34,29 @@ export async function fetchNayaOneDataset(offset = 0): Promise<NayaOneDatasetRes
     url.searchParams.set('offset', String(Math.floor(offset)));
   }
 
-  const response = await fetch(url, {
-    headers: {
-      'Accept': 'application/json',
-      'Accept-Profile': 'api',
-      'sandpit-key': apiKey,
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      headers: {
+        Accept: 'application/json',
+        'Accept-Profile': 'api',
+        'sandpit-key': apiKey,
+      },
+    });
+  } catch (err) {
+    throw new NayaOneRequestError(
+      err instanceof Error ? err.message : 'Unknown NayaOne request error',
+      503,
+      ''
+    );
+  }
 
   if (!response.ok) {
     const message = await response.text();
-    throw new Error(
-      message || `NayaOne dataset request failed with status ${response.status}`
+    throw new NayaOneRequestError(
+      `NayaOne dataset request failed with status ${response.status}`,
+      response.status,
+      message
     );
   }
 

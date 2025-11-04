@@ -62,16 +62,27 @@ export async function listTransactions({
   accountId,
   limit = 50,
 }: ListTransactionsParams): Promise<Transaction[]> {
+  const conditions: string[] = [];
   const values: unknown[] = [];
-  let query = `SELECT t.*, a.name AS account_name FROM transactions t JOIN accounts a ON a.id = t.account_id`;
+
   if (accountId) {
-    query += ' WHERE t.account_id = $1';
-  } else {
-    query += ' WHERE 1=1';
+    conditions.push(`t.account_id = $${conditions.length + 1}`);
     values.push(accountId);
   }
-  query += ' ORDER BY t.ts DESC LIMIT $' + (values.length + 1);
+
+  const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const limitParam = `$${values.length + 1}`;
+  const query = `
+    SELECT t.*, a.name AS account_name
+    FROM transactions t
+    JOIN accounts a ON a.id = t.account_id
+    ${whereClause}
+    ORDER BY t.ts DESC
+    LIMIT ${limitParam}
+  `;
+
   values.push(limit);
+
   const { rows } = await pool.query<Transaction>(query, values);
   return rows;
 }
@@ -99,7 +110,18 @@ export async function createTransaction(input: CreateTransactionInput): Promise<
       input.direction,
     ]
   );
-  return rows[0];
+
+  const created = rows[0];
+
+  const { rows: enriched } = await pool.query<Transaction>(
+    `SELECT t.*, a.name AS account_name
+     FROM transactions t
+     JOIN accounts a ON a.id = t.account_id
+     WHERE t.id = $1`,
+    [created.id]
+  );
+
+  return enriched[0] ?? created;
 }
 
 export interface CreateAlertInput {
