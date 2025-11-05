@@ -84,6 +84,8 @@ Highlights:
 - Settings page for future profile preferences.
 - Tailwind CSS and shadcn-inspired UI primitives tuned for mobile and desktop.
 
+Additional context on how the synthetic datasets power the user journey is available in [docs/synthetic-data-user-journey.md](docs/synthetic-data-user-journey.md).
+
 Getting started:
 
 ```bash
