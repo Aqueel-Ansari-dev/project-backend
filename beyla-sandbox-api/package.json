@@ -10,7 +10,8 @@
     "format": "prettier --write \"src/**/*.{ts,js}\"",
     "import:nayaone": "tsx --esm scripts/nayaone-importer.ts",
     "migrate": "tsx scripts/migrate.ts",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx scripts/seed.ts",
+    "seed:sample": "tsx scripts/sample-reset-seed.ts"
   },
   "dependencies": {
     "aws-sdk": "^2.1616.0",
