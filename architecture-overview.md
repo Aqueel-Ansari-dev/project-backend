@@ -96,6 +96,8 @@ Alerts follow the same evidence pipeline and expose a presigned evidence URL thr
 
 Operators can enrich sandbox sessions with sample UK SME data sourced from the NayaOne sandpit. The frontend invokes `GET /datasets/nayaone`, which the API validates and then fans out to the hosted dataset with the stored sandpit key. Offsets must be multiples of 10 as per the provider contract, and the response returns the upstream payload alongside the computed `nextOffset` for easy pagination.【F:frontend/app/datasets/page.tsx†L1-L121】【F:beyla-sandbox-api/src/routes/datasets.ts†L1-L34】
 
+For a narrative walkthrough of how these datasets surface inside the product experience—from login to alerts and audit trails—see [Synthetic data user journey](docs/synthetic-data-user-journey.md).
+
 ## Deployment topology
 
 Terraform composes reusable modules for the AWS environment:
