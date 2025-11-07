@@ -6,6 +6,7 @@ import {
 } from '../db/account-repository.js';
 import { recordEvidenceEvent } from '../services/audit-log.js';
 import { writeEvidence } from '../services/evidence.js';
+import { getSmeScope, hasSmeScope } from '../utils/sme-scope.js';
 
 const router = Router();
 
@@ -14,7 +15,13 @@ router.get('/', async (req, res, next) => {
     const accountId = typeof req.query.account_id === 'string' ? req.query.account_id : undefined;
     const limitParam = req.query.limit ? Number(req.query.limit) : undefined;
     const limit = limitParam && Number.isFinite(limitParam) ? Math.min(Math.max(Math.floor(limitParam), 1), 500) : undefined;
-    const data = await listTransactions({ accountId, limit });
+    const scope = getSmeScope(req);
+    if (!hasSmeScope(scope)) {
+      res.status(403);
+      throw new Error('Unable to determine SME context for transactions request');
+    }
+
+    const data = await listTransactions({ accountId, limit, scope });
     res.json({ data });
   } catch (err) {
     next(err);
