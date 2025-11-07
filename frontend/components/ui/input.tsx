@@ -1,6 +1,12 @@
 'use client';
 
-import { forwardRef, InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react';
+import {
+  forwardRef,
+  InputHTMLAttributes,
+  LabelHTMLAttributes,
+  SelectHTMLAttributes,
+  TextareaHTMLAttributes,
+} from 'react';
 import { cn } from './cn';
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
@@ -47,6 +53,10 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<H
 );
 Textarea.displayName = 'Textarea';
 
-export function Label({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <label className={cn('text-xs font-semibold uppercase tracking-wide text-slate-400', className)}>{children}</label>;
+export function Label({ className, children, ...props }: LabelHTMLAttributes<HTMLLabelElement>) {
+  return (
+    <label className={cn('text-xs font-semibold uppercase tracking-wide text-slate-400', className)} {...props}>
+      {children}
+    </label>
+  );
 }

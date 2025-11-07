@@ -11,9 +11,11 @@ import { correlationMiddleware } from './middlewares/correlation.js';
 import { errorHandler } from './middlewares/error-handler.js';
 import { requestContextMiddleware } from './middlewares/request-context.js';
 import alertsRouter from './routes/alerts.js';
+import authRouter from './routes/auth.js';
 import balancesRouter from './routes/balances.js';
-import healthRouter from './routes/health.js';
 import datasetsRouter from './routes/datasets.js';
+import healthRouter from './routes/health.js';
+import smeRouter from './routes/sme.js';
 import transactionsRouter from './routes/transactions.js';
 
 const app = express();
@@ -50,11 +52,13 @@ app.use(
   })
 );
 app.use('/health', healthRouter);
+app.use('/auth', authRouter);
 app.use(authMiddleware);
 app.use('/balances', requestContextMiddleware, balancesRouter);
 app.use('/transactions', requestContextMiddleware, transactionsRouter);
 app.use('/alerts', requestContextMiddleware, alertsRouter);
 app.use('/datasets', requestContextMiddleware, datasetsRouter);
+app.use('/sme', requestContextMiddleware, smeRouter);
 
 app.use(errorHandler);
 

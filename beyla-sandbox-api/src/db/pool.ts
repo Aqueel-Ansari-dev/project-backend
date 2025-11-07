@@ -1,7 +1,7 @@
 import { Pool, types } from 'pg';
 
-types.setTypeParser(114, (val) => JSON.parse(val));
-types.setTypeParser(3802, (val) => JSON.parse(val));
+types.setTypeParser(114, (val: string) => JSON.parse(val));
+types.setTypeParser(3802, (val: string) => JSON.parse(val));
 
 const connectionString = process.env.DB_URL;
 
