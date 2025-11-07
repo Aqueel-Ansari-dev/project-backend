@@ -1,7 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+
 import { useBalances, useTransactions } from '../../lib/api';
+import { useRequireAuth } from '../../lib/use-require-auth';
 import { TransactionList } from '../../components/transactions/transaction-list';
 import { AddTransactionForm } from '../../components/transactions/add-transaction-form';
 import { Button } from '../../components/ui/button';
@@ -9,6 +11,7 @@ import { Modal } from '../../components/ui/modal';
 import { Spinner } from '../../components/ui/spinner';
 
 export default function TransactionsPage() {
+  const { isAuthenticated, loading: authLoading } = useRequireAuth();
   const { data: balances } = useBalances();
   const { data: transactions, loading, create } = useTransactions();
   const [modalOpen, setModalOpen] = useState(false);
@@ -26,6 +29,18 @@ export default function TransactionsPage() {
     }
     return Array.from(seen.values());
   }, [balances]);
+
+  if (authLoading && !isAuthenticated) {
+    return (
+      <div className="flex h-64 items-center justify-center rounded-xl border border-slate-800 bg-slate-900/40">
+        <Spinner className="h-6 w-6 animate-spin text-brand" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="space-y-6">
