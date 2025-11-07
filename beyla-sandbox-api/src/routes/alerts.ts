@@ -3,13 +3,20 @@ import { Router } from 'express';
 import { createAlert, listAlerts } from '../db/account-repository.js';
 import { recordEvidenceEvent } from '../services/audit-log.js';
 import { writeEvidence } from '../services/evidence.js';
+import { getSmeScope, hasSmeScope } from '../utils/sme-scope.js';
 
 const router = Router();
 
 router.get('/', async (req, res, next) => {
   try {
     const accountId = typeof req.query.account_id === 'string' ? req.query.account_id : undefined;
-    const data = await listAlerts(accountId);
+    const scope = getSmeScope(req);
+    if (!hasSmeScope(scope)) {
+      res.status(403);
+      throw new Error('Unable to determine SME context for alerts request');
+    }
+
+    const data = await listAlerts({ accountId, scope });
     res.json({ data });
   } catch (err) {
     next(err);
