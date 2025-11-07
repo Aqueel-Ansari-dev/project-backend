@@ -3,14 +3,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-import {
-  fetchSmeProfile,
-  triggerSmeSimulation,
-  useAlerts,
-  useBalances,
-  useTransactions,
-  type NayaOneRecord,
-} from '../lib/api';
+import { fetchSmeProfile, triggerSmeSimulation, useAlerts, useBalances, useTransactions, type SmeProfileSnapshot } from '../lib/api';
 import { useRequireAuth } from '../lib/use-require-auth';
 import { BalanceSummary } from '../components/dashboard/balance-summary';
 import { BalanceTrendChart } from '../components/dashboard/balance-trend-chart';
@@ -19,13 +12,6 @@ import { TransactionList } from '../components/transactions/transaction-list';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Spinner } from '../components/ui/spinner';
-
-interface SimulationSummary {
-  dataset: NayaOneRecord;
-  balancesCreated: number;
-  transactionsCreated: number;
-  alertsCreated: number;
-}
 
 function toNumber(value: unknown): number {
   if (typeof value === 'number') return value;
@@ -68,11 +54,9 @@ export default function DashboardPage() {
     loading: alertsLoading,
     refresh: refreshAlerts,
   } = useAlerts();
-  const [profile, setProfile] = useState<{ dataset: NayaOneRecord; createdAt: string } | null>(null);
+  const [profile, setProfile] = useState<SmeProfileSnapshot | null>(null);
   const [simulating, setSimulating] = useState(false);
   const [simulationError, setSimulationError] = useState<string | null>(null);
-  const [simulationSummary, setSimulationSummary] = useState<SimulationSummary | null>(null);
-  const [lastRun, setLastRun] = useState<string | null>(null);
 
   const insightsLoading = balancesLoading || txLoading || alertsLoading;
 
@@ -82,7 +66,6 @@ export default function DashboardPage() {
         .then((result) => {
           if (result) {
             setProfile(result);
-            setLastRun(result.createdAt);
           }
         })
         .catch(() => undefined);
@@ -94,14 +77,7 @@ export default function DashboardPage() {
     setSimulating(true);
     try {
       const result = await triggerSmeSimulation();
-      setSimulationSummary({
-        dataset: result.dataset,
-        balancesCreated: result.balancesCreated,
-        transactionsCreated: result.transactionsCreated,
-        alertsCreated: result.alertsCreated,
-      });
-      setProfile({ dataset: result.dataset, createdAt: new Date().toISOString() });
-      setLastRun(new Date().toISOString());
+      setProfile(result);
       await Promise.all([refreshBalances(), refreshTransactions(), refreshAlerts()]);
     } catch (err) {
       setSimulationError(err instanceof Error ? err.message : 'Unable to refresh SME data');
@@ -118,8 +94,16 @@ export default function DashboardPage() {
       return transactions[0].currency;
     }
     const datasetCurrency = profile?.dataset?.currency;
-    return typeof datasetCurrency === 'string' ? datasetCurrency : 'GBP';
-  }, [balances, profile?.dataset, transactions]);
+    if (typeof datasetCurrency === 'string' && datasetCurrency.trim()) {
+      return datasetCurrency;
+    }
+    const accountCurrency = profile?.account?.currency;
+    return typeof accountCurrency === 'string' && accountCurrency.trim() ? accountCurrency : 'GBP';
+  }, [balances, profile, transactions]);
+
+  const lastRun = profile?.createdAt ?? null;
+
+  const hasSummary = Boolean(profile);
 
   if (authLoading && !isAuthenticated) {
     return (
@@ -162,26 +146,26 @@ export default function DashboardPage() {
             </p>
           </div>
         ) : null}
-        {simulationSummary && !simulating ? (
+        {!simulating && hasSummary ? (
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
             <Card>
               <CardContent className="space-y-1 pt-6">
                 <p className="text-xs uppercase tracking-wide text-slate-400">Accounts generated</p>
-                <p className="text-xl font-semibold text-white">1</p>
+                <p className="text-xl font-semibold text-white">{profile?.summary.accounts ?? 0}</p>
                 <p className="text-xs text-slate-500">Primary account refreshed with simulation metadata.</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="space-y-1 pt-6">
                 <p className="text-xs uppercase tracking-wide text-slate-400">Transactions ingested</p>
-                <p className="text-xl font-semibold text-white">{simulationSummary.transactionsCreated}</p>
+                <p className="text-xl font-semibold text-white">{profile?.summary.transactions ?? 0}</p>
                 <p className="text-xs text-slate-500">Synthetic ledger entries streamed for cashflow analysis.</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="space-y-1 pt-6">
                 <p className="text-xs uppercase tracking-wide text-slate-400">Alerts prepared</p>
-                <p className="text-xl font-semibold text-white">{simulationSummary.alertsCreated}</p>
+                <p className="text-xl font-semibold text-white">{profile?.summary.alerts ?? 0}</p>
                 <p className="text-xs text-slate-500">Evidence-ready anomalies for audit conversations.</p>
               </CardContent>
             </Card>

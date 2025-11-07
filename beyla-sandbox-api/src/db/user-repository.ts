@@ -2,6 +2,45 @@ import type { PoolClient } from 'pg';
 
 import { pool } from './pool.js';
 
+type Queryable = Pick<PoolClient, 'query'>;
+
+let ensureSchemaPromise: Promise<void> | null = null;
+
+async function ensureUserSchema(client: Queryable = pool): Promise<void> {
+  if (!ensureSchemaPromise) {
+    ensureSchemaPromise = (async () => {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS users (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          email TEXT NOT NULL UNIQUE,
+          password_hash TEXT NOT NULL,
+          first_name TEXT NOT NULL,
+          last_name TEXT NOT NULL,
+          company_name TEXT NOT NULL,
+          company_reg_number TEXT NOT NULL,
+          sector TEXT,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+      `);
+
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS sme_profiles (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          dataset JSONB NOT NULL,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+      `);
+    })()
+      .catch((err) => {
+        ensureSchemaPromise = null;
+        throw err;
+      });
+  }
+
+  await ensureSchemaPromise;
+}
+
 export interface UserRecord {
   id: string;
   email: string;
@@ -24,12 +63,14 @@ export interface CreateUserInput {
   sector?: string;
 }
 
-export async function findUserByEmail(email: string, client: PoolClient = pool): Promise<UserRecord | null> {
+export async function findUserByEmail(email: string, client: Queryable = pool): Promise<UserRecord | null> {
+  await ensureUserSchema(client);
   const { rows } = await client.query<UserRecord>('SELECT * FROM users WHERE email = $1', [email]);
   return rows[0] ?? null;
 }
 
-export async function createUser(input: CreateUserInput, client: PoolClient = pool): Promise<UserRecord> {
+export async function createUser(input: CreateUserInput, client: Queryable = pool): Promise<UserRecord> {
+  await ensureUserSchema(client);
   const { rows } = await client.query<UserRecord>(
     `INSERT INTO users (email, password_hash, first_name, last_name, company_name, company_reg_number, sector)
      VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -51,15 +92,27 @@ export async function createUser(input: CreateUserInput, client: PoolClient = po
 export async function recordSmeProfile(
   userId: string,
   dataset: Record<string, unknown>,
-  client: PoolClient = pool
-): Promise<void> {
-  await client.query('INSERT INTO sme_profiles (user_id, dataset) VALUES ($1, $2)', [userId, JSON.stringify(dataset)]);
+  client: Queryable = pool
+): Promise<{ dataset: Record<string, unknown>; created_at: string }> {
+  await ensureUserSchema(client);
+  const { rows } = await client.query<{ dataset: Record<string, unknown>; created_at: string }>(
+    'INSERT INTO sme_profiles (user_id, dataset) VALUES ($1, $2) RETURNING dataset, created_at',
+    [userId, JSON.stringify(dataset)]
+  );
+
+  const row = rows[0];
+  if (!row) {
+    throw new Error('Failed to record SME profile snapshot');
+  }
+
+  return row;
 }
 
 export async function getLatestSmeProfile(
   userId: string,
-  client: PoolClient = pool
+  client: Queryable = pool
 ): Promise<{ dataset: Record<string, unknown>; created_at: string } | null> {
+  await ensureUserSchema(client);
   const { rows } = await client.query<{ dataset: Record<string, unknown>; created_at: string }>(
     `SELECT dataset, created_at FROM sme_profiles
      WHERE user_id = $1

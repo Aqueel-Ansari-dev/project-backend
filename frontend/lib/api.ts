@@ -49,6 +49,20 @@ export interface Alert {
 
 export type NayaOneRecord = Record<string, unknown>;
 
+export interface SmeProfileSummary {
+  accounts: number;
+  balances: number;
+  transactions: number;
+  alerts: number;
+}
+
+export interface SmeProfileSnapshot {
+  dataset: NayaOneRecord;
+  createdAt: string;
+  account: { id: string; name: string; currency: string } | null;
+  summary: SmeProfileSummary;
+}
+
 interface ApiResponse<T> {
   data: T;
 }
@@ -270,16 +284,10 @@ export function useNayaOneDataset() {
   return { records, loading, error, loadMore, hasMore, refresh };
 }
 
-export async function triggerSmeSimulation(): Promise<{
-  dataset: NayaOneRecord;
-  account: { id: string; name: string; currency: string };
-  balancesCreated: number;
-  transactionsCreated: number;
-  alertsCreated: number;
-}> {
+export async function triggerSmeSimulation(): Promise<SmeProfileSnapshot> {
   return apiFetch('/sme/simulations', { method: 'POST' });
 }
 
-export async function fetchSmeProfile(): Promise<{ dataset: NayaOneRecord; createdAt: string } | null> {
+export async function fetchSmeProfile(): Promise<SmeProfileSnapshot | null> {
   return apiFetch('/sme/profile');
 }
