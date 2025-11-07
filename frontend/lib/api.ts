@@ -2,7 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useAuth } from './auth-context';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8080';
+
+let authToken: string | null = null;
+
+export function setApiAuthToken(token: string | null) {
+  authToken = token;
+}
 
 export interface Balance {
   id: string;
@@ -52,6 +60,9 @@ async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (!(init.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
+  if (authToken) {
+    headers.set('Authorization', `Bearer ${authToken}`);
+  }
 
   const response = await fetch(url, { ...init, headers });
   if (!response.ok) {
@@ -69,8 +80,13 @@ export function useBalances() {
   const [data, setData] = useState<Balance[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
+  const { isAuthenticated, token } = useAuth();
 
   const refresh = useCallback(async () => {
+    if (!token) {
+      setData([]);
+      return;
+    }
     setLoading(true);
     setError(undefined);
     try {
@@ -81,11 +97,13 @@ export function useBalances() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    if (isAuthenticated && token) {
+      refresh().catch(() => undefined);
+    }
+  }, [isAuthenticated, refresh, token]);
 
   return { data, loading, error, refresh };
 }
@@ -94,8 +112,13 @@ export function useTransactions() {
   const [data, setData] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
+  const { isAuthenticated, token } = useAuth();
 
   const refresh = useCallback(async () => {
+    if (!token) {
+      setData([]);
+      return;
+    }
     setLoading(true);
     setError(undefined);
     try {
@@ -106,28 +129,27 @@ export function useTransactions() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    if (isAuthenticated && token) {
+      refresh().catch(() => undefined);
+    }
+  }, [isAuthenticated, refresh, token]);
 
   const create = useCallback(
-      async (payload: {
-        account_id: string;
-        amount: number;
-        currency: string;
-        description?: string;
-        category?: string;
-        direction: 'in' | 'out';
-      }) => {
-        const created = await apiFetch<Transaction>(
-          '/transactions',
-          {
-            method: 'POST',
-            body: JSON.stringify(payload),
-        }
-      );
+    async (payload: {
+      account_id: string;
+      amount: number;
+      currency: string;
+      description?: string;
+      category?: string;
+      direction: 'in' | 'out';
+    }) => {
+      const created = await apiFetch<Transaction>('/transactions', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
       await refresh();
       return created;
     },
@@ -141,8 +163,13 @@ export function useAlerts() {
   const [data, setData] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
+  const { isAuthenticated, token } = useAuth();
 
   const refresh = useCallback(async () => {
+    if (!token) {
+      setData([]);
+      return;
+    }
     setLoading(true);
     setError(undefined);
     try {
@@ -153,18 +180,18 @@ export function useAlerts() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    if (isAuthenticated && token) {
+      refresh().catch(() => undefined);
+    }
+  }, [isAuthenticated, refresh, token]);
 
   const fetchEvidence = useCallback(
-      async (alertId: string) => {
-        try {
-          const { url } = await apiFetch<{ url: string }>(
-          `/alerts/${alertId}/evidence`
-        );
+    async (alertId: string) => {
+      try {
+        const { url } = await apiFetch<{ url: string }>(`/alerts/${alertId}/evidence`);
         return url;
       } catch (err) {
         throw new Error(
@@ -186,37 +213,52 @@ export function useNayaOneDataset() {
   const [nextOffset, setNextOffset] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
+  const { isAuthenticated, token } = useAuth();
 
   const hasMore = useMemo(() => nextOffset !== null, [nextOffset]);
 
   const loadPage = useCallback(
     async (requestedOffset: number, append: boolean) => {
-        setLoading(true);
+      if (!token) {
+        setRecords([]);
+        setOffset(0);
+        setNextOffset(null);
         setError(undefined);
+        return;
+      }
+      setLoading(true);
+      setError(undefined);
 
-        try {
-          const page = await apiFetch<{
-            records: NayaOneRecord[];
-            offset: number;
-            pageSize: number;
-            nextOffset: number | null;
-          }>(`/datasets/nayaone?offset=${requestedOffset}`);
+      try {
+        const page = await apiFetch<{
+          records: NayaOneRecord[];
+          offset: number;
+          pageSize: number;
+          nextOffset: number | null;
+        }>(`/datasets/nayaone?offset=${requestedOffset}`);
 
-          setOffset(requestedOffset);
-          setNextOffset(page.nextOffset);
-          setRecords((prev) => (append ? [...prev, ...page.records] : page.records));
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Failed to load dataset');
-        } finally {
-          setLoading(false);
-        }
+        setOffset(requestedOffset);
+        setNextOffset(page.nextOffset);
+        setRecords((prev) => (append ? [...prev, ...page.records] : page.records));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load dataset');
+      } finally {
+        setLoading(false);
+      }
     },
-    []
+    [token]
   );
 
   useEffect(() => {
-    loadPage(0, false).catch(() => undefined);
-  }, [loadPage]);
+    if (isAuthenticated && token) {
+      loadPage(0, false).catch(() => undefined);
+    } else {
+      setRecords([]);
+      setOffset(0);
+      setNextOffset(null);
+      setError(undefined);
+    }
+  }, [isAuthenticated, loadPage, token]);
 
   const loadMore = useCallback(async () => {
     if (nextOffset === null) return;
@@ -225,5 +267,19 @@ export function useNayaOneDataset() {
 
   const refresh = useCallback(async () => loadPage(0, false), [loadPage]);
 
-  return { records, offset, loading, error, loadMore, hasMore, refresh };
+  return { records, loading, error, loadMore, hasMore, refresh };
+}
+
+export async function triggerSmeSimulation(): Promise<{
+  dataset: NayaOneRecord;
+  account: { id: string; name: string; currency: string };
+  balancesCreated: number;
+  transactionsCreated: number;
+  alertsCreated: number;
+}> {
+  return apiFetch('/sme/simulations', { method: 'POST' });
+}
+
+export async function fetchSmeProfile(): Promise<{ dataset: NayaOneRecord; createdAt: string } | null> {
+  return apiFetch('/sme/profile');
 }

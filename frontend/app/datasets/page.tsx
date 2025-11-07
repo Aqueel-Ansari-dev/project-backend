@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+
 import { useNayaOneDataset, type NayaOneRecord } from '../../lib/api';
+import { useRequireAuth } from '../../lib/use-require-auth';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
@@ -62,6 +64,7 @@ function getPageNumbers(current: number, total: number) {
 }
 
 export default function NayaOneDatasetPage() {
+  const { isAuthenticated, loading: authLoading } = useRequireAuth();
   const { records, loading, error, loadMore, hasMore, refresh } = useNayaOneDataset();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -171,6 +174,18 @@ export default function NayaOneDatasetPage() {
     if (sortKey !== column) return 'none';
     return sortDirection === 'asc' ? 'ascending' : 'descending';
   };
+
+  if (authLoading && !isAuthenticated) {
+    return (
+      <div className="flex h-64 items-center justify-center rounded-xl border border-slate-800 bg-slate-900/40">
+        <Spinner className="h-6 w-6 animate-spin text-brand" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="space-y-6">

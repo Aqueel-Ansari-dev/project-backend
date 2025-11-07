@@ -1,10 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Menu } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { LogOut, Menu } from 'lucide-react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+
 import { useAuth } from '../../lib/auth-context';
+import { Button } from '../ui/button';
 import { cn } from '../ui/cn';
 
 const navItems = [
@@ -17,8 +19,39 @@ const navItems = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const router = useRouter();
+  const { user, isAuthenticated, loading, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const authRoutes = useMemo(() => new Set(['/login', '/register']), []);
+  const isAuthRoute = pathname ? authRoutes.has(pathname) : false;
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated && !isAuthRoute) {
+      router.replace('/login');
+    }
+  }, [isAuthenticated, isAuthRoute, loading, router]);
+
+  if (isAuthRoute) {
+    return (
+      <div className="flex min-h-screen flex-col bg-slate-950">
+        <main className="flex flex-1 items-center justify-center px-4 py-10 sm:px-6 lg:px-8">
+          <div className="w-full max-w-lg space-y-8">{children}</div>
+        </main>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-950">
+        <div className="space-y-2 text-center">
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-brand border-t-transparent" />
+          <p className="text-sm text-slate-400">Preparing your dashboard…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col">
@@ -50,9 +83,20 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             ))}
           </div>
-          <div className="hidden text-right text-xs leading-tight sm:block">
-            <p className="font-medium text-slate-200">{user?.email ?? 'sandbox@beyla.local'}</p>
-            <p className="text-slate-400">Sandbox mode active</p>
+          <div className="hidden items-center gap-4 sm:flex">
+            <div className="text-right text-xs leading-tight">
+              <p className="font-medium text-slate-200">{user?.email ?? 'guest@beyla.local'}</p>
+              <p className="text-slate-400">{user?.companyName ?? 'SME dashboard'}</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+              onClick={() => signOut()}
+            >
+              <LogOut className="h-4 w-4" />
+              Sign out
+            </Button>
           </div>
         </div>
         {mobileOpen && (
@@ -72,6 +116,18 @@ export function AppShell({ children }: { children: ReactNode }) {
                   </Link>
                 </li>
               ))}
+              <li>
+                <button
+                  type="button"
+                  className="block w-full px-4 py-3 text-left text-sm font-medium text-slate-300 hover:bg-slate-900"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    signOut();
+                  }}
+                >
+                  Sign out
+                </button>
+              </li>
             </ul>
           </nav>
         )}
