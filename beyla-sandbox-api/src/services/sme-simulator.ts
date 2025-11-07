@@ -27,6 +27,15 @@ const COMPANY_TYPES = [
 
 const TURNOVER_BANDS = ['0-632k', '632k-2m', '2m-5m', '5m-10m'];
 const EMPLOYEE_BANDS = ['0-4 People', '5-9 People', '10-24 People', '25-49 People'];
+const TRADE_NAME_SUFFIXES = ['Holdings', 'Ventures', 'Group', 'Collective', 'Partners', 'Industries'];
+const ACCOUNT_SUFFIXES = [
+  'Operating Account',
+  'Treasury Reserve',
+  'Collections Wallet',
+  'Working Capital Pool',
+  'Client Escrow',
+  'FX Hedge Account',
+];
 const PRIMARY_SECTORS = [
   '41-43 : Construction',
   '56 : Accommodation & food service activities',
@@ -56,6 +65,18 @@ function randomChoice<T>(items: readonly T[]): T {
 function generateAccountNumber(): string {
   const base = Array.from({ length: 13 }, () => randomInt(0, 9)).join('');
   return base.padStart(13, '0');
+}
+
+function generateTradeName(base: string): string {
+  const suffix = randomChoice(TRADE_NAME_SUFFIXES);
+  const marker = randomInt(101, 989);
+  return `${base} ${suffix} ${marker}`;
+}
+
+function generateAccountLabel(baseName: string): string {
+  const suffix = randomChoice(ACCOUNT_SUFFIXES);
+  const tag = randomInt(1000, 9999);
+  return `${baseName} • ${suffix} ${tag}`;
 }
 
 function generatePhoneNumber(): string {
@@ -99,6 +120,8 @@ function buildDataset(user: AuthenticatedUser): Record<string, unknown> {
   const totalAmount = payInAmount + payOutAmount + randomFloat(50_000, 250_000, 2);
   const accountNumber = generateAccountNumber();
   const primarySector = user.sector?.trim() || randomChoice(PRIMARY_SECTORS);
+  const baseEntityName = user.entityName ?? user.companyRegNumber ?? 'Sandbox SME';
+  const entityTradeName = generateTradeName(baseEntityName);
   const turnoverBand = randomChoice(TURNOVER_BANDS);
 
   return {
@@ -107,9 +130,9 @@ function buildDataset(user: AuthenticatedUser): Record<string, unknown> {
     address: generateAddress(),
     contact_phone_no: generatePhoneNumber(),
     primary_sector: primarySector,
-    entity_trade_name: `${user.entityName ?? user.companyRegNumber ?? 'Sandbox'} Trading`,
+    entity_trade_name: entityTradeName,
     company_type: randomChoice(COMPANY_TYPES),
-    entity_name: user.entityName ?? user.companyRegNumber ?? 'Sandbox SME Ltd',
+    entity_name: `${baseEntityName} ${randomChoice(['Limited', 'PLC', 'LLP', 'Group'])}`.trim(),
     company_reg_number: user.companyRegNumber ?? randomUUID(),
     annual_turnover: turnoverBand,
     number_of_employees: randomChoice(EMPLOYEE_BANDS),
@@ -157,6 +180,7 @@ function buildDataset(user: AuthenticatedUser): Record<string, unknown> {
     cost_ratio: Number((costs / totalAmount).toFixed(6)),
     pay_in_amount: Number(payInAmount.toFixed(2)),
     pay_out_amount: Number(payOutAmount.toFixed(2)),
+    primary_account_display_name: generateAccountLabel(entityTradeName),
   };
 }
 
@@ -305,12 +329,14 @@ export async function simulateSmeData(user: AuthenticatedUser): Promise<Simulati
     await client.query('BEGIN');
     await client.query(`DELETE FROM accounts WHERE raw ->> 'company_reg_number' = $1`, [user.companyRegNumber]);
 
+    const accountName = (dataset.primary_account_display_name as string) ?? generateAccountLabel(dataset.entity_trade_name as string);
+
     const accountResult = await client.query<{ id: string; name: string; currency: string }>(
       `INSERT INTO accounts (name, currency, external_id, source, raw)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id, name, currency`,
       [
-        dataset.entity_trade_name,
+        accountName,
         currency,
         (dataset.current_account_number as string) ?? null,
         'simulation',

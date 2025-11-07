@@ -8,6 +8,9 @@ import { useRequireAuth } from '../lib/use-require-auth';
 import { BalanceSummary } from '../components/dashboard/balance-summary';
 import { BalanceTrendChart } from '../components/dashboard/balance-trend-chart';
 import { CashflowInsights } from '../components/dashboard/cashflow-insights';
+import { ExpenseBreakdownChart } from '../components/dashboard/expense-breakdown-chart';
+import { FinancialBenchmarks } from '../components/dashboard/financial-benchmarks';
+import { MonthlyCashflowChart } from '../components/dashboard/monthly-cashflow-chart';
 import { TransactionList } from '../components/transactions/transaction-list';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
@@ -59,6 +62,12 @@ export default function DashboardPage() {
   const [simulationError, setSimulationError] = useState<string | null>(null);
 
   const insightsLoading = balancesLoading || txLoading || alertsLoading;
+
+  const renderLoadingCard = (height = 'h-48') => (
+    <div className={`flex ${height} items-center justify-center rounded-xl border border-slate-800 bg-slate-900/40`}>
+      <Spinner className="h-6 w-6 animate-spin text-brand" />
+    </div>
+  );
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
@@ -172,7 +181,7 @@ export default function DashboardPage() {
           </div>
         ) : null}
         {profile ? (
-          <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-6">
             <div className="rounded-xl border border-slate-800/60 bg-slate-900/60 p-4">
               <p className="text-xs uppercase tracking-wide text-slate-400">Primary sector</p>
               <p className="text-sm font-semibold text-white">{String(profile.dataset.primary_sector ?? '—')}</p>
@@ -195,46 +204,43 @@ export default function DashboardPage() {
                 {formatCurrency(toNumber(profile.dataset.total_amount), primaryCurrency)}
               </p>
             </div>
+            <div className="rounded-xl border border-slate-800/60 bg-slate-900/60 p-4">
+              <p className="text-xs uppercase tracking-wide text-slate-400">Primary account</p>
+              <p className="text-sm font-semibold text-white">
+                {String(profile.dataset.primary_account_display_name ?? profile.account?.name ?? 'Sandbox account')}
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-800/60 bg-slate-900/60 p-4">
+              <p className="text-xs uppercase tracking-wide text-slate-400">Headquarters</p>
+              <p className="text-sm font-semibold text-white">
+                {String(profile.dataset.borough_county ?? profile.dataset.address ?? '—')}
+              </p>
+            </div>
           </div>
         ) : null}
       </section>
-      <section className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          {balancesLoading ? (
-            <div className="flex h-48 items-center justify-center rounded-xl border border-slate-800 bg-slate-900/40">
-              <Spinner className="h-6 w-6 animate-spin text-brand" />
-            </div>
+      <section className="grid gap-6 xl:grid-cols-5">
+        <div className="space-y-6 xl:col-span-3">
+          {balancesLoading ? renderLoadingCard('h-64') : <BalanceSummary balances={balances} />}
+          {insightsLoading ? (
+            renderLoadingCard('h-80')
           ) : (
-            <BalanceSummary balances={balances} />
+            <CashflowInsights balances={balances} transactions={transactions} alerts={alerts} />
           )}
         </div>
-        <div>
-          {balancesLoading ? (
-            <div className="flex h-48 items-center justify-center rounded-xl border border-slate-800 bg-slate-900/40">
-              <Spinner className="h-6 w-6 animate-spin text-brand" />
-            </div>
-          ) : (
-            <BalanceTrendChart balances={balances} currency={primaryCurrency} />
+        <div className="space-y-6 xl:col-span-2">
+          {balancesLoading ? renderLoadingCard('h-64') : <BalanceTrendChart balances={balances} currency={primaryCurrency} />}
+          {txLoading ? renderLoadingCard('h-64') : (
+            <MonthlyCashflowChart transactions={transactions} currency={primaryCurrency} />
           )}
+          {txLoading ? renderLoadingCard('h-64') : (
+            <ExpenseBreakdownChart transactions={transactions} currency={primaryCurrency} />
+          )}
+          {profile ? <FinancialBenchmarks dataset={profile.dataset} currency={primaryCurrency} /> : null}
         </div>
       </section>
       <section>
-        {insightsLoading ? (
-          <div className="flex h-64 items-center justify-center rounded-xl border border-slate-800 bg-slate-900/40">
-            <Spinner className="h-6 w-6 animate-spin text-brand" />
-          </div>
-        ) : (
-          <CashflowInsights balances={balances} transactions={transactions} alerts={alerts} />
-        )}
-      </section>
-      <section>
-        {txLoading ? (
-          <div className="flex h-64 items-center justify-center rounded-xl border border-slate-800 bg-slate-900/40">
-            <Spinner className="h-6 w-6 animate-spin text-brand" />
-          </div>
-        ) : (
-          <TransactionList transactions={transactions} limit={5} />
-        )}
+        {txLoading ? renderLoadingCard('h-64') : <TransactionList transactions={transactions} limit={5} />}
       </section>
     </div>
   );
