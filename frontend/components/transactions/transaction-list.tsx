@@ -52,12 +52,6 @@ export function TransactionList({ transactions, limit, title, description, actio
               .split(' ')
               .map((part) => (part ? part.charAt(0).toUpperCase() + part.slice(1) : part))
               .join(' ');
-            const sourceLabel =
-              transaction.source && transaction.source.toLowerCase() === 'nayaone'
-                ? 'NayaOne ledger'
-                : transaction.source
-                  ? transaction.source.charAt(0).toUpperCase() + transaction.source.slice(1)
-                  : 'Ledger';
             return (
               <div
                 key={transaction.id}
@@ -97,7 +91,6 @@ export function TransactionList({ transactions, limit, title, description, actio
                         })
                       : transaction.amount}
                   </p>
-                  <p className="text-xs text-slate-500">Source: {sourceLabel}</p>
                 </div>
               </div>
             );
