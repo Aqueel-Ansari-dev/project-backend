@@ -87,14 +87,14 @@ export function BalanceSummary({ balances }: { balances: Balance[] }) {
         <div>
           <CardTitle className="text-xl text-white">Cash position overview</CardTitle>
           <p className="text-sm text-slate-400">
-            Working capital snapshot derived from the NayaOne synthetic current-account feed. These balances underpin the
-            Digital CFO experience for the sandbox.
+            Working capital snapshot derived from the connected current-account feeds. These balances underpin the Digital CFO
+            experience presented to operators.
           </p>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <SummaryTile icon={Banknote} label="Cash on hand" value={totalDisplay} caption="Aggregated across synthetic accounts" />
+          <SummaryTile icon={Banknote} label="Cash on hand" value={totalDisplay} caption="Aggregated across all accounts" />
           <SummaryTile
             icon={Building2}
             label="Active accounts"
@@ -122,7 +122,7 @@ export function BalanceSummary({ balances }: { balances: Balance[] }) {
                   key={balance.id}
                   className="flex flex-col gap-1 rounded-lg border border-slate-800 bg-slate-900/50 px-4 py-3"
                 >
-                  <p className="text-sm font-semibold text-white">{balance.account_name ?? 'Sandbox account'}</p>
+                  <p className="text-sm font-semibold text-white">{balance.account_name ?? 'Primary account'}</p>
                   <p className="text-sm text-brand">{formatted}</p>
                   <p className="text-xs text-slate-500">
                     As of {new Date(balance.as_of_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
@@ -133,7 +133,7 @@ export function BalanceSummary({ balances }: { balances: Balance[] }) {
           </div>
           {balances.length > 6 && (
             <p className="text-xs text-slate-500">
-              Showing the six most recent ledgers. Use the dataset explorer to inspect the full synthetic company catalogue.
+              Showing the six most recent ledgers. Use the dataset explorer to inspect the full company catalogue.
             </p>
           )}
         </div>

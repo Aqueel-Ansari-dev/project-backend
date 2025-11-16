@@ -84,7 +84,7 @@ export function MonthlyCashflowChart({ transactions, currency }: MonthlyCashflow
       </CardHeader>
       <CardContent>
         {!monthly.length || maxValue <= 0 ? (
-          <p className="text-sm text-slate-400">Run a simulation to populate the monthly cashflow trend.</p>
+          <p className="text-sm text-slate-400">No monthly cashflow trend is available yet.</p>
         ) : (
           <div className="flex items-end gap-3">
             {monthly.map((bucket) => {
