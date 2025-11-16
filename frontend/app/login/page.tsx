@@ -43,7 +43,7 @@ export default function LoginPage() {
       <div className="space-y-2 text-center">
         <p className="text-xs uppercase tracking-[0.3em] text-brand">Beyla</p>
         <h1 className="text-2xl font-semibold text-white">Welcome back</h1>
-        <p className="text-sm text-slate-400">Sign in to orchestrate your SME&apos;s synthetic cashflow data.</p>
+        <p className="text-sm text-slate-400">Sign in to orchestrate your SME&apos;s live cashflow data.</p>
       </div>
       <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
         <div className="space-y-2">
@@ -85,7 +85,7 @@ export default function LoginPage() {
         </Button>
       </form>
       <p className="mt-6 text-center text-sm text-slate-400">
-        New to the sandbox?{' '}
+        New to the platform?{' '}
         <Link href="/register" className="font-semibold text-brand hover:underline">
           Create an account
         </Link>

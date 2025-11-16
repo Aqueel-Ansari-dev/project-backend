@@ -47,7 +47,7 @@ export default function TransactionsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-white">Transactions</h1>
-          <p className="text-sm text-slate-400">Create synthetic ledger activity and monitor evidence capture.</p>
+          <p className="text-sm text-slate-400">Create ledger activity and monitor evidence capture.</p>
         </div>
         <Button onClick={() => setModalOpen(true)}>Add transaction</Button>
       </div>
@@ -62,7 +62,7 @@ export default function TransactionsPage() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         title="Create transaction"
-        description="Persist a synthetic payment into the sandbox ledger and trigger evidence capture."
+        description="Persist a payment into the ledger and trigger evidence capture."
       >
         <AddTransactionForm
           accounts={accounts}

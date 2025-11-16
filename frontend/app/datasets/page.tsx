@@ -220,7 +220,7 @@ export default function NayaOneDatasetPage() {
         <CardContent className="space-y-2 p-5 text-sm text-slate-200">
           <p>
             • Import this dataset via <code className="rounded bg-slate-800 px-1 py-0.5 text-xs text-slate-100">npm run migrate</code> or{' '}
-            <code className="rounded bg-slate-800 px-1 py-0.5 text-xs text-slate-100">npm run seed</code> to hydrate the sandbox ledger.
+            <code className="rounded bg-slate-800 px-1 py-0.5 text-xs text-slate-100">npm run seed</code> to hydrate the ledger.
           </p>
           <p>• Financial agents query the same records through the backend API when generating recommendations and evidence logs.</p>
           <p>• Use the search, sorting, and pagination controls below to inspect raw company metadata and link it back to ledger activity.</p>

@@ -71,7 +71,7 @@ export default function RegisterPage() {
       <div className="space-y-2 text-center">
         <p className="text-xs uppercase tracking-[0.3em] text-brand">Beyla</p>
         <h1 className="text-2xl font-semibold text-white">Create your SME space</h1>
-        <p className="text-sm text-slate-400">Register to spin up a synthetic ledger tailored to your company profile.</p>
+        <p className="text-sm text-slate-400">Register to provision a live ledger tailored to your company profile.</p>
       </div>
       <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
         <div className="grid gap-4 sm:grid-cols-2">

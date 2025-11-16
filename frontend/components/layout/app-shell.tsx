@@ -66,7 +66,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Menu className="h-5 w-5" />
             </button>
             <Link href="/" className="text-lg font-semibold tracking-tight text-white">
-              Beyla Sandbox
+              Beyla
             </Link>
           </div>
           <div className="hidden items-center gap-6 text-sm font-medium lg:flex">

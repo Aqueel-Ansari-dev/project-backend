@@ -7,11 +7,11 @@ import { fetchSmeProfile, triggerSmeSimulation, useAlerts, useBalances, useTrans
 import { useRequireAuth } from '../lib/use-require-auth';
 import { BalanceSummary } from '../components/dashboard/balance-summary';
 import { BalanceTrendChart } from '../components/dashboard/balance-trend-chart';
+import { AccountDashboard } from '../components/dashboard/account-dashboard';
 import { CashflowInsights } from '../components/dashboard/cashflow-insights';
 import { ExpenseBreakdownChart } from '../components/dashboard/expense-breakdown-chart';
 import { FinancialBenchmarks } from '../components/dashboard/financial-benchmarks';
 import { MonthlyCashflowChart } from '../components/dashboard/monthly-cashflow-chart';
-import { TransactionList } from '../components/transactions/transaction-list';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Spinner } from '../components/ui/spinner';
@@ -130,8 +130,8 @@ export default function DashboardPage() {
             <p className="text-sm font-semibold uppercase tracking-wide text-brand">High priority fetch</p>
             <h2 className="text-2xl font-semibold text-white">Generate a fresh SME ledger</h2>
             <p className="max-w-2xl text-sm text-slate-300">
-              Pull a brand-new synthetic account, balance, and transaction history tailored to your registration details. The
-              process mirrors a regulated refresh, complete with evidence-ready alerts.
+              Pull a brand-new account, balance, and transaction history tailored to your registration details. The process
+              mirrors a regulated refresh, complete with evidence-ready alerts.
             </p>
             {lastRun ? (
               <p className="text-xs text-slate-500">Last generated: {new Date(lastRun).toLocaleString()}</p>
@@ -151,7 +151,7 @@ export default function DashboardPage() {
               <span className="animate-pulse">Fetching all your account details…</span>
             </div>
             <p className="mt-2 text-xs text-slate-400">
-              Streaming balances, ledger entries, and alert insights from the sandbox orchestrator.
+              Streaming balances, ledger entries, and alert insights from the core orchestration pipeline.
             </p>
           </div>
         ) : null}
@@ -161,14 +161,14 @@ export default function DashboardPage() {
               <CardContent className="space-y-1 pt-6">
                 <p className="text-xs uppercase tracking-wide text-slate-400">Accounts generated</p>
                 <p className="text-xl font-semibold text-white">{profile?.summary.accounts ?? 0}</p>
-                <p className="text-xs text-slate-500">Primary account refreshed with simulation metadata.</p>
+                <p className="text-xs text-slate-500">Primary account refreshed with the latest metadata.</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="space-y-1 pt-6">
                 <p className="text-xs uppercase tracking-wide text-slate-400">Transactions ingested</p>
                 <p className="text-xl font-semibold text-white">{profile?.summary.transactions ?? 0}</p>
-                <p className="text-xs text-slate-500">Synthetic ledger entries streamed for cashflow analysis.</p>
+                <p className="text-xs text-slate-500">Ledger entries streamed for cashflow analysis.</p>
               </CardContent>
             </Card>
             <Card>
@@ -207,7 +207,7 @@ export default function DashboardPage() {
             <div className="rounded-xl border border-slate-800/60 bg-slate-900/60 p-4">
               <p className="text-xs uppercase tracking-wide text-slate-400">Primary account</p>
               <p className="text-sm font-semibold text-white">
-                {String(profile.dataset.primary_account_display_name ?? profile.account?.name ?? 'Sandbox account')}
+                {String(profile.dataset.primary_account_display_name ?? profile.account?.name ?? 'Primary account')}
               </p>
             </div>
             <div className="rounded-xl border border-slate-800/60 bg-slate-900/60 p-4">
@@ -240,7 +240,16 @@ export default function DashboardPage() {
         </div>
       </section>
       <section>
-        {txLoading ? renderLoadingCard('h-64') : <TransactionList transactions={transactions} limit={5} />}
+        {txLoading || balancesLoading ? (
+          renderLoadingCard('h-[32rem]')
+        ) : (
+          <AccountDashboard
+            balances={balances}
+            transactions={transactions}
+            alerts={alerts}
+            currency={primaryCurrency}
+          />
+        )}
       </section>
     </div>
   );

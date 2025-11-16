@@ -120,8 +120,8 @@ export function CashflowInsights({
         <div>
           <CardTitle className="text-xl text-white">Digital CFO insights</CardTitle>
           <p className="text-sm text-slate-400">
-            High-level signals generated from the NayaOne synthetic ledger. Use these metrics to explain agent recommendations
-            and to evidence cashflow posture to regulators.
+            High-level signals generated from the live ledger. Use these metrics to explain agent recommendations and to
+            evidence cashflow posture to regulators.
           </p>
         </div>
       </CardHeader>
@@ -131,7 +131,7 @@ export function CashflowInsights({
             icon={TrendingUp}
             label="Annual pay-ins"
             value={formatCurrency(annualPayIn, primaryCurrency)}
-            caption="Inflow captured across all sandbox accounts"
+            caption="Inflow captured across all connected accounts"
           />
           <InsightStat
             icon={TrendingDown}
@@ -158,7 +158,7 @@ export function CashflowInsights({
             caption={
               monthlyBurn > 0
                 ? `Based on a monthly burn of ${formatCurrency(monthlyBurn, primaryCurrency)}`
-                : 'No recurring burn detected in the synthetic ledger'
+                : 'No recurring burn detected in the ledger'
             }
           />
         </div>
@@ -168,7 +168,7 @@ export function CashflowInsights({
             <div>
               <p className="text-sm font-semibold text-white">Largest outgoing</p>
               <p className="text-xs text-slate-400">
-                Highlights the biggest synthetic payment for anomaly detection and working capital reviews.
+                Highlights the biggest payment for anomaly detection and working capital reviews.
               </p>
             </div>
             {largestOutgoing ? (
@@ -176,9 +176,9 @@ export function CashflowInsights({
                 <p className="text-base font-semibold text-rose-300">
                   {formatCurrency(toNumber(largestOutgoing.amount), largestOutgoing.currency)}
                 </p>
-                <p>{largestOutgoing.description ?? 'Synthetic ledger outflow'}</p>
+                <p>{largestOutgoing.description ?? 'Ledger outflow'}</p>
                 <p className="text-xs text-slate-500">
-                  {largestOutgoing.account_name ?? 'Sandbox account'} ·{' '}
+                  {largestOutgoing.account_name ?? 'Primary account'} ·{' '}
                   {new Date(largestOutgoing.ts).toLocaleDateString(undefined, {
                     year: 'numeric',
                     month: 'short',
@@ -209,7 +209,7 @@ export function CashflowInsights({
               </span>
             </div>
             {openAlerts.length === 0 ? (
-              <p className="text-sm text-slate-400">All synthetic alerts are currently resolved.</p>
+              <p className="text-sm text-slate-400">All alerts are currently resolved.</p>
             ) : (
               <ul className="space-y-2 text-sm text-slate-300">
                 {openAlerts.slice(0, 3).map((alert) => {
@@ -225,9 +225,9 @@ export function CashflowInsights({
                           <p className="text-xs font-semibold uppercase tracking-wide text-rose-200">
                             {alert.type.replace('.', ' ')}
                           </p>
-                          <p>{message ?? 'Synthetic anomaly detected in the ledger.'}</p>
+                          <p>{message ?? 'Anomaly detected in the ledger.'}</p>
                           <p className="text-xs text-slate-500">
-                            {alert.account_name ?? 'Sandbox account'} ·{' '}
+                            {alert.account_name ?? 'Primary account'} ·{' '}
                             {new Date(alert.created_at).toLocaleDateString(undefined, {
                               year: 'numeric',
                               month: 'short',

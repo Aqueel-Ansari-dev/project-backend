@@ -5,8 +5,8 @@ import { AuthProvider } from '../lib/auth-context';
 import { AppShell } from '../components/layout/app-shell';
 
 export const metadata: Metadata = {
-  title: 'Beyla Sandbox',
-  description: 'Next.js dashboard for the Beyla sandbox API',
+  title: 'Beyla',
+  description: 'Next.js dashboard for the Beyla financial platform',
 };
 
 export default function RootLayout({

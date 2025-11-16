@@ -1,25 +1,36 @@
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import { ReactNode } from 'react';
+
 import { Transaction } from '../../lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { cn } from '../ui/cn';
 import { Badge } from '../ui/badge';
 
-export function TransactionList({
-  transactions,
-  limit,
-}: {
+interface TransactionListProps {
   transactions: Transaction[];
   limit?: number;
-}) {
+  title?: string;
+  description?: string;
+  actionSlot?: ReactNode;
+}
+
+export function TransactionList({ transactions, limit, title, description, actionSlot }: TransactionListProps) {
   const visible = typeof limit === 'number' ? transactions.slice(0, limit) : transactions;
+  const heading = title ?? 'Recent activity';
+  const helperText =
+    description ??
+    'Ledger movements captured across your connected accounts. Use these entries to narrate agentic decisions and evidence working capital changes.';
+
   return (
     <Card>
       <CardHeader className="flex-col items-start gap-2">
-        <CardTitle>Recent activity</CardTitle>
-        <p className="text-sm text-slate-400">
-          Synthetic ledger movements from the NayaOne dataset. Use these entries to narrate agentic decisions and evidence
-          working capital changes.
-        </p>
+        <div className="flex w-full flex-wrap items-start justify-between gap-3">
+          <div>
+            <CardTitle className="text-lg font-semibold tracking-tight text-white">{heading}</CardTitle>
+            {helperText ? <p className="text-sm text-slate-400">{helperText}</p> : null}
+          </div>
+          {actionSlot ? <div className="shrink-0">{actionSlot}</div> : null}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
@@ -43,10 +54,10 @@ export function TransactionList({
               .join(' ');
             const sourceLabel =
               transaction.source && transaction.source.toLowerCase() === 'nayaone'
-                ? 'NayaOne synthetic ledger'
+                ? 'NayaOne ledger'
                 : transaction.source
                   ? transaction.source.charAt(0).toUpperCase() + transaction.source.slice(1)
-                  : 'Sandbox';
+                  : 'Ledger';
             return (
               <div
                 key={transaction.id}
@@ -62,7 +73,7 @@ export function TransactionList({
                     {isIn ? <ArrowDownRight className="h-5 w-5" /> : <ArrowUpRight className="h-5 w-5" />}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-white">{transaction.description ?? 'Sandbox transaction'}</p>
+                    <p className="text-sm font-semibold text-white">{transaction.description ?? 'Ledger transaction'}</p>
                     <div className="mt-1 flex flex-wrap items-center gap-2">
                       <Badge variant={categoryVariant}>{categoryLabel}</Badge>
                       <p className="text-xs text-slate-400">

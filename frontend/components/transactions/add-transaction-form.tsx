@@ -27,8 +27,8 @@ export function AddTransactionForm({ accounts, onCreate }: AddTransactionFormPro
   const [direction, setDirection] = useState<'in' | 'out'>('out');
   const [amount, setAmount] = useState('100.00');
   const [currency, setCurrency] = useState('GBP');
-  const [description, setDescription] = useState('Sandbox purchase');
-  const [category, setCategory] = useState('sandbox');
+  const [description, setDescription] = useState('Ledger purchase');
+  const [category, setCategory] = useState('operations');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const [success, setSuccess] = useState<string | undefined>();
@@ -119,11 +119,11 @@ export function AddTransactionForm({ accounts, onCreate }: AddTransactionFormPro
       </div>
       <div className="space-y-2">
         <Label>Description</Label>
-        <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Sandbox transaction" />
+        <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Payment description" />
       </div>
       <div className="space-y-2">
         <Label>Category</Label>
-        <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="sandbox" />
+        <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="operations" />
       </div>
       {error && <p className="text-sm text-rose-300">{error}</p>}
       {success && <p className="text-sm text-emerald-300">{success}</p>}
