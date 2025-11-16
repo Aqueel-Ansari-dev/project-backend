@@ -75,7 +75,7 @@ export function BalanceTrendChart({ balances, currency = 'GBP' }: BalanceTrendCh
       </CardHeader>
       <CardContent>
         {series.length === 0 || maxAmount <= 0 ? (
-          <p className="text-sm text-slate-400">No balance history yet. Run a simulation to populate the ledger.</p>
+          <p className="text-sm text-slate-400">No balance history is available yet.</p>
         ) : (
           <div className="flex items-end gap-3">
             {series.map((point) => {
