@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 
+import { verifyCognitoToken, type CognitoTokenPayload } from '../utils/cognito.js';
 import { verifyToken, type TokenPayload } from '../utils/jwt.js';
 
 export interface AuthenticatedUser {
@@ -43,7 +44,20 @@ function mapTokenToUser(payload: TokenPayload): AuthenticatedUser {
   };
 }
 
-export function authMiddleware(req: Request, res: Response, next: NextFunction) {
+function mapCognitoTokenToUser(payload: CognitoTokenPayload): AuthenticatedUser {
+  if (!payload.sub) {
+    throw new Error('Invalid Cognito token payload');
+  }
+  return {
+    id: payload.sub,
+    type: 'user',
+    email: payload.email,
+    roles: Array.isArray(payload['cognito:groups']) ? payload['cognito:groups'] : undefined,
+    accountExternalId: payload.sub,
+  };
+}
+
+export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
   if (req.method === 'OPTIONS') {
     next();
     return;
@@ -73,7 +87,13 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
     req.user = mapTokenToUser(payload);
     next();
   } catch (err) {
-    res.status(401);
-    next(err instanceof Error ? err : new Error('Invalid or expired token'));
+    try {
+      const cognitoPayload = await verifyCognitoToken(token);
+      req.user = mapCognitoTokenToUser(cognitoPayload);
+      next();
+    } catch (cognitoErr) {
+      res.status(401);
+      next(cognitoErr instanceof Error ? cognitoErr : new Error('Invalid or expired token'));
+    }
   }
 }

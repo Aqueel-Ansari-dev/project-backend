@@ -13,7 +13,8 @@ async function ensureUserSchema(client: Queryable = pool): Promise<void> {
         CREATE TABLE IF NOT EXISTS users (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           email TEXT NOT NULL UNIQUE,
-          password_hash TEXT NOT NULL,
+          password_hash TEXT,
+          cognito_sub TEXT UNIQUE,
           first_name TEXT NOT NULL,
           last_name TEXT NOT NULL,
           company_name TEXT NOT NULL,
@@ -21,6 +22,16 @@ async function ensureUserSchema(client: Queryable = pool): Promise<void> {
           sector TEXT,
           created_at TIMESTAMPTZ DEFAULT NOW()
         )
+      `);
+
+      await client.query(`
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS cognito_sub TEXT UNIQUE
+      `);
+
+      await client.query(`
+        ALTER TABLE users
+        ALTER COLUMN password_hash DROP NOT NULL
       `);
 
       await client.query(`
@@ -44,7 +55,8 @@ async function ensureUserSchema(client: Queryable = pool): Promise<void> {
 export interface UserRecord {
   id: string;
   email: string;
-  password_hash: string;
+  password_hash: string | null;
+  cognito_sub: string | null;
   first_name: string;
   last_name: string;
   company_name: string;
@@ -55,12 +67,23 @@ export interface UserRecord {
 
 export interface CreateUserInput {
   email: string;
-  passwordHash: string;
+  passwordHash?: string | null;
+  cognitoSub?: string | null;
   firstName: string;
   lastName: string;
   companyName: string;
   companyRegNumber: string;
   sector?: string;
+}
+
+export interface UpdateUserProfileInput {
+  email: string;
+  cognitoSub?: string | null;
+  firstName?: string;
+  lastName?: string;
+  companyName?: string;
+  companyRegNumber?: string;
+  sector?: string | null;
 }
 
 export async function findUserByEmail(email: string, client: Queryable = pool): Promise<UserRecord | null> {
@@ -69,15 +92,22 @@ export async function findUserByEmail(email: string, client: Queryable = pool): 
   return rows[0] ?? null;
 }
 
+export async function findUserByCognitoSub(cognitoSub: string, client: Queryable = pool): Promise<UserRecord | null> {
+  await ensureUserSchema(client);
+  const { rows } = await client.query<UserRecord>('SELECT * FROM users WHERE cognito_sub = $1', [cognitoSub]);
+  return rows[0] ?? null;
+}
+
 export async function createUser(input: CreateUserInput, client: Queryable = pool): Promise<UserRecord> {
   await ensureUserSchema(client);
   const { rows } = await client.query<UserRecord>(
-    `INSERT INTO users (email, password_hash, first_name, last_name, company_name, company_reg_number, sector)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO users (email, password_hash, cognito_sub, first_name, last_name, company_name, company_reg_number, sector)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING *`,
     [
       input.email,
-      input.passwordHash,
+      input.passwordHash ?? null,
+      input.cognitoSub ?? null,
       input.firstName,
       input.lastName,
       input.companyName,
@@ -87,6 +117,35 @@ export async function createUser(input: CreateUserInput, client: Queryable = poo
   );
 
   return rows[0];
+}
+
+export async function updateUserProfileByEmail(
+  input: UpdateUserProfileInput,
+  client: Queryable = pool
+): Promise<UserRecord | null> {
+  await ensureUserSchema(client);
+  const { rows } = await client.query<UserRecord>(
+    `UPDATE users
+     SET cognito_sub = COALESCE($1, cognito_sub),
+         first_name = COALESCE($2, first_name),
+         last_name = COALESCE($3, last_name),
+         company_name = COALESCE($4, company_name),
+         company_reg_number = COALESCE($5, company_reg_number),
+         sector = COALESCE($6, sector)
+     WHERE email = $7
+     RETURNING *`,
+    [
+      input.cognitoSub ?? null,
+      input.firstName ?? null,
+      input.lastName ?? null,
+      input.companyName ?? null,
+      input.companyRegNumber ?? null,
+      input.sector ?? null,
+      input.email,
+    ]
+  );
+
+  return rows[0] ?? null;
 }
 
 export async function recordSmeProfile(
