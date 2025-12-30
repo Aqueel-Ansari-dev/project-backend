@@ -6,7 +6,7 @@ This repository contains the Beyla sandbox backend API, AWS infrastructure as co
 
 ### `beyla-sandbox-api`
 
-TypeScript/Express service that exposes the sandbox API backed by PostgreSQL and S3 evidence logging.
+TypeScript/Express service that exposes the sandbox API backed by PostgreSQL and S3 evidence logging, with Cognito-backed authentication for protected routes.
 
 Key features:
 
@@ -16,6 +16,7 @@ Key features:
 - Evidence log writer that publishes structured audit JSON to S3 using the agreed key format and records metadata to PostgreSQL.
 - Optional SNS fan-out for agent observability by publishing each evidence payload to the `agent-events` topic.
 - Request correlation IDs, structured Pino logging, and Dockerfile ready for multi-stage production images.
+- Cognito-backed auth endpoints (`/auth/register` to create users, `/auth/callback` to exchange hosted UI codes for tokens).
 
 Getting started locally:
 
@@ -72,7 +73,7 @@ Outputs include VPC/subnet IDs, database endpoint, evidence bucket name, and ALB
 
 ### `frontend`
 
-Next.js 14 dashboard that consumes the sandbox API with a built-in sandbox session (no authentication required locally).
+Next.js 14 dashboard that consumes the sandbox API and redirects operators through Cognito Hosted UI for login/registration.
 
 Highlights:
 
@@ -95,7 +96,7 @@ npm install
 npm run dev
 ```
 
-Set `NEXT_PUBLIC_API_BASE_URL` to your API endpoint. The optional Cognito variables can remain for future production hardening, but local sandbox flows will work with only the API URL and optional display metadata.
+Set `NEXT_PUBLIC_API_BASE_URL` to your API endpoint, plus the Cognito Hosted UI variables (`NEXT_PUBLIC_COGNITO_DOMAIN`, `NEXT_PUBLIC_COGNITO_CLIENT_ID`, `NEXT_PUBLIC_COGNITO_REDIRECT_URI`) to enable login.
 
 ## Deployment workflow
 

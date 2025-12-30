@@ -3,8 +3,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { setApiAuthToken } from './api';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8080';
 const STORAGE_KEY = 'beyla-auth';
 
 export interface AuthUser {
@@ -23,19 +21,6 @@ interface StoredAuth {
   expiresAt?: number;
 }
 
-interface SignInPayload {
-  email: string;
-  password: string;
-}
-
-interface RegisterPayload extends SignInPayload {
-  firstName: string;
-  lastName: string;
-  companyName: string;
-  companyRegNumber: string;
-  sector?: string;
-}
-
 interface AuthResponse {
   token: string;
   expiresIn: number;
@@ -47,41 +32,11 @@ interface AuthContextValue {
   loading: boolean;
   token?: string;
   user?: AuthUser;
-  signIn: (payload: SignInPayload) => Promise<void>;
-  register: (payload: RegisterPayload) => Promise<void>;
+  setAuthFromBackend: (response: AuthResponse) => void;
   signOut: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-
-async function requestAuth(path: string, body: unknown): Promise<AuthResponse> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    try {
-      const parsed = JSON.parse(text) as { message?: string };
-      if (parsed?.message) {
-        throw new Error(parsed.message);
-      }
-    } catch {
-      if (text.trim()) {
-        throw new Error(text);
-      }
-    }
-    throw new Error('Authentication request failed');
-  }
-
-  const json = (await response.json()) as { data: AuthResponse };
-  return json.data;
-}
 
 function loadStoredAuth(): StoredAuth | null {
   if (typeof window === 'undefined') {
@@ -141,18 +96,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     persistAuth({ token: response.token, user: response.user, expiresAt });
   }, []);
 
-  const signIn = useCallback(
-    async (payload: SignInPayload) => {
-      const result = await requestAuth('/auth/login', payload);
-      applyAuth(result);
-    },
-    [applyAuth]
-  );
-
-  const register = useCallback(
-    async (payload: RegisterPayload) => {
-      const result = await requestAuth('/auth/register', payload);
-      applyAuth(result);
+  const setAuthFromBackend = useCallback(
+    (response: AuthResponse) => {
+      applyAuth(response);
     },
     [applyAuth]
   );
@@ -162,6 +108,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(undefined);
     setApiAuthToken(null);
     persistAuth(null);
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const domain = process.env.NEXT_PUBLIC_COGNITO_DOMAIN;
+    const clientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID;
+    const redirectUri =
+      process.env.NEXT_PUBLIC_COGNITO_REDIRECT_URI ?? window.location.origin;
+    if (domain && clientId) {
+      const logoutUrl = `${domain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(redirectUri)}`;
+      window.location.assign(logoutUrl);
+    }
   }, []);
 
   const value = useMemo<AuthContextValue>(
@@ -170,11 +127,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       token,
       user,
-      signIn,
-      register,
+      setAuthFromBackend,
       signOut,
     }),
-    [loading, register, signIn, signOut, token, user]
+    [loading, setAuthFromBackend, signOut, token, user]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

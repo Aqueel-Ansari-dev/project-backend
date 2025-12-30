@@ -1,6 +1,6 @@
 # Beyla Sandbox Frontend
 
-A responsive Next.js 14 + Tailwind dashboard for the Beyla sandbox API. The app is tuned for mobile and desktop layouts, surfaces balances, transactions, alerts, audit evidence links, and the synthetic NayaOne dataset exposed by the backend proxy, and now runs without requiring Cognito authentication for local sandbox testing.
+A responsive Next.js 14 + Tailwind dashboard for the Beyla sandbox API. The app is tuned for mobile and desktop layouts, surfaces balances, transactions, alerts, audit evidence links, and the synthetic NayaOne dataset exposed by the backend proxy, and now authenticates via the Cognito Hosted UI flow.
 
 ## Prerequisites
 
@@ -10,7 +10,7 @@ A responsive Next.js 14 + Tailwind dashboard for the Beyla sandbox API. The app 
 
 ## Getting started
 
-1. Copy `.env.example` to `.env.local` and set the environment variables for your API base URL and optional display metadata.
+1. Copy `.env.example` to `.env.local` and set the environment variables for your API base URL and Cognito Hosted UI configuration.
 2. Install dependencies and start the development server:
 
 ```bash
@@ -18,21 +18,16 @@ npm install
 npm run dev
 ```
 
-3. Open [http://localhost:3000](http://localhost:3000) in your browser. The dashboard will load immediately without a sign-in flow.
+3. Open [http://localhost:3000](http://localhost:3000) in your browser. You will be redirected to the Cognito login screen.
 
 ### Environment variables
 
 | Variable | Description |
 | --- | --- |
 | `NEXT_PUBLIC_API_BASE_URL` | Base URL for the sandbox API (e.g. `http://localhost:8080`). |
-| `NEXT_PUBLIC_COGNITO_DOMAIN` | *(Optional)* Cognito Hosted UI domain reserved for future secure deployments. |
-| `NEXT_PUBLIC_COGNITO_CLIENT_ID` | *(Optional)* Cognito app client ID. |
-| `NEXT_PUBLIC_COGNITO_REDIRECT_URI` | *(Optional)* URL Cognito redirects back to after sign-in. |
-| `NEXT_PUBLIC_COGNITO_LOGOUT_URI` | *(Optional)* URL Cognito redirects back to after logout. |
-| `NEXT_PUBLIC_COGNITO_REGION` | *(Optional)* AWS region of the Cognito user pool. |
-| `NEXT_PUBLIC_COGNITO_USER_POOL_ID` | *(Optional)* Cognito user pool identifier. |
-| `NEXT_PUBLIC_SANDBOX_USER_EMAIL` | Email shown in the header while running without Cognito. |
-| `NEXT_PUBLIC_SANDBOX_USER_NAME` | Display name shown in the header while running without Cognito. |
+| `NEXT_PUBLIC_COGNITO_DOMAIN` | Cognito Hosted UI domain (e.g. `https://your-domain.auth.eu-west-2.amazoncognito.com`). |
+| `NEXT_PUBLIC_COGNITO_CLIENT_ID` | Cognito app client ID. |
+| `NEXT_PUBLIC_COGNITO_REDIRECT_URI` | URL Cognito redirects back to after sign-in (e.g. `http://localhost:3000/auth/callback`). |
 
 ## Available scripts
 
@@ -69,4 +64,3 @@ The frontend is optimized for deployment on Vercel or AWS CloudFront. Build the 
 - Review alerts with status badges.
 - Open an audit evidence link for a selected alert.
 - Browse the NayaOne dataset page and load additional records via the offset-driven API proxy.
-

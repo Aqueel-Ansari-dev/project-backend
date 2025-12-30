@@ -23,7 +23,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { user, isAuthenticated, loading, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const authRoutes = useMemo(() => new Set(['/login', '/register']), []);
+  const authRoutes = useMemo(() => new Set(['/login', '/register', '/auth/callback']), []);
   const isAuthRoute = pathname ? authRoutes.has(pathname) : false;
 
   useEffect(() => {
